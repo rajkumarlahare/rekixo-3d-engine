@@ -1,0 +1,26 @@
+{
+  "name": "rekixo-3d-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:admin": "npm run dev --workspace @rekixo/3d-admin",
+    "dev:public": "npm run dev --workspace @rekixo/3d-public",
+    "build": "npm run build --workspace @rekixo/3d-admin && npm run build --workspace @rekixo/3d-public",
+    "typecheck": "tsc -p apps/admin/tsconfig.json --noEmit && tsc -p apps/public/tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "typescript": "5.9.3",
+    "vite": "8.0.13"
+  }
+}
