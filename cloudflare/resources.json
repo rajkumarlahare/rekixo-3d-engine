@@ -1,0 +1,16 @@
+{
+  "d1": {
+    "binding": "DB",
+    "database_name": "rekixo-3d-production",
+    "database_id": "43423a10-66b2-4460-af5f-f6ab9f2947dc"
+  },
+  "r2": {
+    "binding": "ASSETS_BUCKET",
+    "bucket_name": "rekixo-3d-assets",
+    "status": "not-created-yet"
+  },
+  "workers": {
+    "admin": "rekixo-3d-admin",
+    "public": "rekixo-3d-public"
+  }
+}
