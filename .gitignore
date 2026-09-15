@@ -1,0 +1,28 @@
+node_modules/
+dist/
+.vite/
+.wrangler/
+.env
+.env.*
+!.env.example
+
+# Local/source architectural assets never belong in Git.
+source-assets/
+local-assets/
+*.fbx
+*.max
+*.dwg
+*.skp
+*.skb
+*.drs
+*.glb
+*.gltf
+*.ktx
+*.ktx2
+*.hdr
+*.exr
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
