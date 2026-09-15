@@ -14,7 +14,8 @@
     "dev:admin": "npm run dev --workspace @rekixo/3d-admin",
     "dev:public": "npm run dev --workspace @rekixo/3d-public",
     "build": "npm run build --workspace @rekixo/3d-admin && npm run build --workspace @rekixo/3d-public",
-    "typecheck": "tsc -p apps/admin/tsconfig.json --noEmit && tsc -p apps/public/tsconfig.json --noEmit"
+    "typecheck": "tsc -p apps/admin/tsconfig.json --noEmit && tsc -p apps/public/tsconfig.json --noEmit",
+    "cf:bootstrap": "python scripts/bootstrap-cloudflare-api.py"
   },
   "devDependencies": {
     "@types/react": "19.2.14",
