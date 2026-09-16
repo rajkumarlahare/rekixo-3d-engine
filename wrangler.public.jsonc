@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rekixo-3d-public",
+  "compatibility_date": "2026-09-16",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "ar3dstudio.in/3Dprojects",
+      "zone_name": "ar3dstudio.in"
+    },
+    {
+      "pattern": "ar3dstudio.in/3Dprojects/*",
+      "zone_name": "ar3dstudio.in"
+    }
+  ],
+  "assets": {
+    "directory": "./apps/public/dist",
+    "not_found_handling": "single-page-application"
+  }
+}

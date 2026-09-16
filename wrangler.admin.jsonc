@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rekixo-3d-admin",
+  "compatibility_date": "2026-09-16",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "admin.rekixo.com/3Dprojects",
+      "zone_name": "rekixo.com"
+    },
+    {
+      "pattern": "admin.rekixo.com/3Dprojects/*",
+      "zone_name": "rekixo.com"
+    }
+  ],
+  "assets": {
+    "directory": "./apps/admin/dist",
+    "not_found_handling": "single-page-application"
+  }
+}
