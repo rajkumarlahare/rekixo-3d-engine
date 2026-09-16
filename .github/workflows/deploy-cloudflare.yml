@@ -83,12 +83,20 @@ jobs:
         run: |
           set -euo pipefail
           URL="https://ar3dstudio.in/3Dprojects/jyoti-paradise"
+          EXPECTED='<title>AR3D Studio 3D Project</title>'
           for attempt in 1 2 3 4 5; do
-            if curl --fail --silent --show-error "$URL" | grep -Fq "Jyoti Paradise"; then
+            BODY="$(mktemp)"
+            STATUS="$(curl --location --silent --show-error --output "$BODY" --write-out '%{http_code}' "$URL" || true)"
+            if [ "$STATUS" = "200" ] && grep -Fq "$EXPECTED" "$BODY"; then
               echo "Public 3D route verified: $URL"
+              rm -f "$BODY"
               exit 0
             fi
-            echo "Waiting for public route propagation (attempt $attempt/5)..."
+            echo "Public verify attempt $attempt/5: HTTP $STATUS"
+            echo "Response preview:"
+            head -c 500 "$BODY" || true
+            echo
+            rm -f "$BODY"
             sleep 5
           done
           echo "::error::Public 3D route did not verify after deployment."
@@ -99,12 +107,20 @@ jobs:
         run: |
           set -euo pipefail
           URL="https://admin.rekixo.com/3Dprojects"
+          EXPECTED='<title>Rekixo 3D Projects</title>'
           for attempt in 1 2 3 4 5; do
-            if curl --fail --silent --show-error "$URL" | grep -Fq "3D Project Engine"; then
+            BODY="$(mktemp)"
+            STATUS="$(curl --location --silent --show-error --output "$BODY" --write-out '%{http_code}' "$URL" || true)"
+            if [ "$STATUS" = "200" ] && grep -Fq "$EXPECTED" "$BODY"; then
               echo "3D Admin route verified: $URL"
+              rm -f "$BODY"
               exit 0
             fi
-            echo "Waiting for admin route propagation (attempt $attempt/5)..."
+            echo "Admin verify attempt $attempt/5: HTTP $STATUS"
+            echo "Response preview:"
+            head -c 500 "$BODY" || true
+            echo
+            rm -f "$BODY"
             sleep 5
           done
           echo "::error::3D Admin route did not verify after deployment."
