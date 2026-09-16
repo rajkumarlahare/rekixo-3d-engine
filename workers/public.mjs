@@ -39,6 +39,16 @@ function addSecurityHeaders(response) {
   });
 }
 
+function toAssetRequest(request) {
+  const url = new URL(request.url);
+  if (url.pathname === BASE_PATH || url.pathname === `${BASE_PATH}/`) {
+    url.pathname = "/";
+  } else if (url.pathname.startsWith(`${BASE_PATH}/`)) {
+    url.pathname = url.pathname.slice(BASE_PATH.length) || "/";
+  }
+  return new Request(url.toString(), request);
+}
+
 async function getProjectExperience(env, slug) {
   const project = await env.DB.prepare(
     `SELECT id, slug, name, location, status, cover_asset_key
@@ -243,6 +253,6 @@ export default {
       return serveModel(env, modelId, request);
     }
 
-    return addSecurityHeaders(await env.ASSETS.fetch(request));
+    return addSecurityHeaders(await env.ASSETS.fetch(toAssetRequest(request)));
   },
 };
