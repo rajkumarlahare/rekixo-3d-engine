@@ -83,20 +83,31 @@ jobs:
           set -euo pipefail
           PAGE_URL="https://ar3dstudio.in/3Dprojects/jyoti-paradise"
           API_URL="https://ar3dstudio.in/3Dprojects/api/projects/jyoti-paradise"
+          ORIGIN="https://ar3dstudio.in"
           for attempt in 1 2 3 4 5; do
             PAGE="$(mktemp)"
             API="$(mktemp)"
             PAGE_STATUS="$(curl --location --silent --show-error --output "$PAGE" --write-out '%{http_code}' "$PAGE_URL" || true)"
             API_STATUS="$(curl --location --silent --show-error --output "$API" --write-out '%{http_code}' "$API_URL" || true)"
+            ASSET_PATH="$(grep -oE 'src="/3Dprojects/assets/[^"]+\.js"' "$PAGE" | head -n1 | cut -d'"' -f2 || true)"
+            ASSET_STATUS="000"
+            ASSET_TYPE=""
+            if [ -n "$ASSET_PATH" ]; then
+              ASSET_META="$(curl --location --silent --show-error --output /dev/null --write-out '%{http_code}|%{content_type}' "${ORIGIN}${ASSET_PATH}" || true)"
+              ASSET_STATUS="${ASSET_META%%|*}"
+              ASSET_TYPE="${ASSET_META#*|}"
+            fi
             if [ "$PAGE_STATUS" = "200" ] \
               && grep -Fq '<title>AR3D Studio 3D Project</title>' "$PAGE" \
               && [ "$API_STATUS" = "200" ] \
-              && grep -Fq '"slug":"jyoti-paradise"' "$API"; then
-              echo "Public 3D production surface verified."
+              && grep -Fq '"slug":"jyoti-paradise"' "$API" \
+              && [ "$ASSET_STATUS" = "200" ] \
+              && [[ "$ASSET_TYPE" == *javascript* ]]; then
+              echo "Public 3D production surface and JavaScript asset verified."
               rm -f "$PAGE" "$API"
               exit 0
             fi
-            echo "Attempt $attempt/5: page=$PAGE_STATUS api=$API_STATUS"
+            echo "Attempt $attempt/5: page=$PAGE_STATUS api=$API_STATUS js=$ASSET_STATUS js_type=$ASSET_TYPE path=$ASSET_PATH"
             echo "API preview:"
             head -c 600 "$API" || true
             echo
@@ -112,20 +123,31 @@ jobs:
           set -euo pipefail
           PAGE_URL="https://admin.rekixo.com/3Dprojects"
           API_URL="https://admin.rekixo.com/3Dprojects/api/status?slug=jyoti-paradise"
+          ORIGIN="https://admin.rekixo.com"
           for attempt in 1 2 3 4 5; do
             PAGE="$(mktemp)"
             API="$(mktemp)"
             PAGE_STATUS="$(curl --location --silent --show-error --output "$PAGE" --write-out '%{http_code}' "$PAGE_URL" || true)"
             API_STATUS="$(curl --location --silent --show-error --output "$API" --write-out '%{http_code}' "$API_URL" || true)"
+            ASSET_PATH="$(grep -oE 'src="/3Dprojects/assets/[^"]+\.js"' "$PAGE" | head -n1 | cut -d'"' -f2 || true)"
+            ASSET_STATUS="000"
+            ASSET_TYPE=""
+            if [ -n "$ASSET_PATH" ]; then
+              ASSET_META="$(curl --location --silent --show-error --output /dev/null --write-out '%{http_code}|%{content_type}' "${ORIGIN}${ASSET_PATH}" || true)"
+              ASSET_STATUS="${ASSET_META%%|*}"
+              ASSET_TYPE="${ASSET_META#*|}"
+            fi
             if [ "$PAGE_STATUS" = "200" ] \
               && grep -Fq '<title>Rekixo 3D Projects</title>' "$PAGE" \
               && [ "$API_STATUS" = "200" ] \
-              && grep -Fq '"bucket":"rekixo-3d-assets"' "$API"; then
-              echo "3D Admin production surface verified."
+              && grep -Fq '"bucket":"rekixo-3d-assets"' "$API" \
+              && [ "$ASSET_STATUS" = "200" ] \
+              && [[ "$ASSET_TYPE" == *javascript* ]]; then
+              echo "3D Admin production surface and JavaScript asset verified."
               rm -f "$PAGE" "$API"
               exit 0
             fi
-            echo "Attempt $attempt/5: page=$PAGE_STATUS api=$API_STATUS"
+            echo "Attempt $attempt/5: page=$PAGE_STATUS api=$API_STATUS js=$ASSET_STATUS js_type=$ASSET_TYPE path=$ASSET_PATH"
             echo "API preview:"
             head -c 600 "$API" || true
             echo
