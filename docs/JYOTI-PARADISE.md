@@ -1,12 +1,30 @@
-# Jyoti Paradise — Project Intake
+# Jyoti Paradise — Production 3D Intake
 
-Slug: `jyoti-paradise`
-Public target: `https://ar3dstudio.in/3Dprojects/jyoti-paradise`
-Status: Foundation / asset preparation
+Slug: `jyoti-paradise`  
+Public: `https://ar3dstudio.in/3Dprojects/jyoti-paradise`  
+Admin: `https://admin.rekixo.com/3Dprojects`
 
-## Assets received outside Git
+## Production status
 
-The working package currently includes references to:
+The isolated production engine is live with:
+
+- dedicated D1: `rekixo-3d-production`
+- dedicated R2: `rekixo-3d-assets`
+- production public Worker: `rekixo-3d-public`
+- production admin Worker: `rekixo-3d-admin`
+- responsive Three.js viewer
+- desktop/mobile orbit controls
+- reset/fullscreen controls
+- model loading progress and safe fallback geometry
+- R2 model streaming through the public Worker
+- D1-backed project / scene / camera / model metadata
+- read-only admin health surface
+
+The current Tiyansh plot project and the existing Rekixo Super Admin are not modified by this engine.
+
+## Source assets received outside Git
+
+The working package has references to:
 
 - Jyoti Paradise brochure PDF
 - apartment FBX model
@@ -15,37 +33,53 @@ The working package currently includes references to:
 - SketchUp backup (`.skb`)
 - exterior render/reference image
 
-These source files must remain outside Git and are not production web assets.
+Raw source files must remain outside Git.
 
-## Still requested from the 3D source team
+## Required production web asset
 
-- original/latest `.skp` file if available
-- complete texture/material folder used by the FBX/SKP model
-- confirmation of the latest approved building model revision
-- any packaged D5 project/media dependencies if available
+The next manual asset handoff is one approved optimized file:
 
-## Planned asset pipeline
+`projects/jyoti-paradise/models/exterior-v1.glb`
 
-1. open the approved source in Blender/SketchUp as appropriate
-2. verify scale/orientation
-3. recover/link missing materials and textures
-4. remove hidden/duplicate/unneeded geometry
-5. optimize meshes and texture sizes
-6. export web-ready GLB
-7. validate mobile memory/performance
-8. upload the optimized model and textures to `rekixo-3d-assets`
-9. register the model version in the 3D database
+Target:
 
-## Phase-one viewer goal
+- glTF 2.0 binary (`.glb`)
+- correct real-world scale
+- model centered near origin
+- Y-up orientation
+- no hidden construction geometry
+- duplicate geometry removed
+- materials consolidated where practical
+- textures compressed and sized for web
+- versioned immutable R2 object key
+- target <= 25 MB for the first mobile exterior model when visually acceptable
 
-The first publishable version needs only:
+The engine already supports Meshopt-compressed GLB files.
 
-- one optimized exterior/building model
-- drag to rotate
-- pinch/wheel to zoom
-- reset/default camera
-- one saved camera preset
-- admin preview
-- public publish
+## Publish contract for a model
 
-Advanced section, balcony, typical-floor, amenity and hotspot experiences come after this base is stable.
+After the GLB is uploaded to `rekixo-3d-assets`, create or activate a `models_3d` record with:
+
+- `project_id = project_jyoti_paradise`
+- a stable model id, e.g. `model_jyoti_exterior_v1`
+- `asset_key = projects/jyoti-paradise/models/exterior-v1.glb`
+- `mime_type = model/gltf-binary`
+- `version = 1`
+- `is_active = 1`
+
+Only one active model is allowed per project by the database index.
+
+## 3D artist export checklist
+
+1. Confirm the latest approved FBX/SKP revision.
+2. Link all missing textures.
+3. Apply transforms and correct scale.
+4. Delete hidden/duplicate construction geometry.
+5. Fix inverted normals.
+6. Merge only meshes that do not need separate future interaction.
+7. Keep meaningful object names for tower/floor/unit expansion.
+8. Compress textures; avoid giant baked texture sheets.
+9. Export a versioned GLB.
+10. Validate in the live viewer before activating the model record.
+
+Advanced section, balcony, floor, amenity and hotspot modules are additive. The production viewer does not need to be rewritten for them.

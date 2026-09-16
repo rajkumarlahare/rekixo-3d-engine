@@ -31,12 +31,44 @@ export interface CameraPreset3D {
   fov?: number;
 }
 
+export interface Model3D {
+  id: string;
+  projectId: string;
+  name: string;
+  version: number;
+  byteSize?: number;
+  sourceFilename?: string;
+  mimeType: string;
+  available: boolean;
+  url?: string;
+}
+
 export interface Scene3D {
   id: string;
   projectId: string;
   name: string;
   type: Scene3DType;
+  modelId?: string;
   cameraPresetId?: string;
   sortOrder: number;
   enabled: boolean;
+  settings?: Record<string, unknown>;
+}
+
+export interface Public3DExperience {
+  project: Project3D;
+  scene?: Scene3D;
+  camera?: CameraPreset3D;
+  model?: Model3D;
+}
+
+export interface Admin3DProjectStatus {
+  project: Project3D;
+  scenes: Scene3D[];
+  models: Model3D[];
+  activeModel?: Model3D;
+  storage: {
+    bucket: string;
+    activeModelObjectAvailable: boolean;
+  };
 }

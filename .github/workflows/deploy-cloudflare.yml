@@ -44,7 +44,6 @@ jobs:
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
             echo "::error::Missing repository secret CLOUDFLARE_API_TOKEN"
-            echo "Add it once in GitHub: Settings > Secrets and variables > Actions > New repository secret."
             exit 1
           fi
 
@@ -78,50 +77,60 @@ jobs:
           deploy
           --config wrangler.public.jsonc
 
-      - name: Verify public route
+      - name: Verify public production surface
         shell: bash
         run: |
           set -euo pipefail
-          URL="https://ar3dstudio.in/3Dprojects/jyoti-paradise"
-          EXPECTED='<title>AR3D Studio 3D Project</title>'
+          PAGE_URL="https://ar3dstudio.in/3Dprojects/jyoti-paradise"
+          API_URL="https://ar3dstudio.in/3Dprojects/api/projects/jyoti-paradise"
           for attempt in 1 2 3 4 5; do
-            BODY="$(mktemp)"
-            STATUS="$(curl --location --silent --show-error --output "$BODY" --write-out '%{http_code}' "$URL" || true)"
-            if [ "$STATUS" = "200" ] && grep -Fq "$EXPECTED" "$BODY"; then
-              echo "Public 3D route verified: $URL"
-              rm -f "$BODY"
+            PAGE="$(mktemp)"
+            API="$(mktemp)"
+            PAGE_STATUS="$(curl --location --silent --show-error --output "$PAGE" --write-out '%{http_code}' "$PAGE_URL" || true)"
+            API_STATUS="$(curl --location --silent --show-error --output "$API" --write-out '%{http_code}' "$API_URL" || true)"
+            if [ "$PAGE_STATUS" = "200" ] \
+              && grep -Fq '<title>AR3D Studio 3D Project</title>' "$PAGE" \
+              && [ "$API_STATUS" = "200" ] \
+              && grep -Fq '"slug":"jyoti-paradise"' "$API"; then
+              echo "Public 3D production surface verified."
+              rm -f "$PAGE" "$API"
               exit 0
             fi
-            echo "Public verify attempt $attempt/5: HTTP $STATUS"
-            echo "Response preview:"
-            head -c 500 "$BODY" || true
+            echo "Attempt $attempt/5: page=$PAGE_STATUS api=$API_STATUS"
+            echo "API preview:"
+            head -c 600 "$API" || true
             echo
-            rm -f "$BODY"
+            rm -f "$PAGE" "$API"
             sleep 5
           done
-          echo "::error::Public 3D route did not verify after deployment."
+          echo "::error::Public 3D production surface did not verify."
           exit 1
 
-      - name: Verify admin route
+      - name: Verify admin production surface
         shell: bash
         run: |
           set -euo pipefail
-          URL="https://admin.rekixo.com/3Dprojects"
-          EXPECTED='<title>Rekixo 3D Projects</title>'
+          PAGE_URL="https://admin.rekixo.com/3Dprojects"
+          API_URL="https://admin.rekixo.com/3Dprojects/api/status?slug=jyoti-paradise"
           for attempt in 1 2 3 4 5; do
-            BODY="$(mktemp)"
-            STATUS="$(curl --location --silent --show-error --output "$BODY" --write-out '%{http_code}' "$URL" || true)"
-            if [ "$STATUS" = "200" ] && grep -Fq "$EXPECTED" "$BODY"; then
-              echo "3D Admin route verified: $URL"
-              rm -f "$BODY"
+            PAGE="$(mktemp)"
+            API="$(mktemp)"
+            PAGE_STATUS="$(curl --location --silent --show-error --output "$PAGE" --write-out '%{http_code}' "$PAGE_URL" || true)"
+            API_STATUS="$(curl --location --silent --show-error --output "$API" --write-out '%{http_code}' "$API_URL" || true)"
+            if [ "$PAGE_STATUS" = "200" ] \
+              && grep -Fq '<title>Rekixo 3D Projects</title>' "$PAGE" \
+              && [ "$API_STATUS" = "200" ] \
+              && grep -Fq '"bucket":"rekixo-3d-assets"' "$API"; then
+              echo "3D Admin production surface verified."
+              rm -f "$PAGE" "$API"
               exit 0
             fi
-            echo "Admin verify attempt $attempt/5: HTTP $STATUS"
-            echo "Response preview:"
-            head -c 500 "$BODY" || true
+            echo "Attempt $attempt/5: page=$PAGE_STATUS api=$API_STATUS"
+            echo "API preview:"
+            head -c 600 "$API" || true
             echo
-            rm -f "$BODY"
+            rm -f "$PAGE" "$API"
             sleep 5
           done
-          echo "::error::3D Admin route did not verify after deployment."
+          echo "::error::3D Admin production surface did not verify."
           exit 1

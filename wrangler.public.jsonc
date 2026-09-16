@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "rekixo-3d-public",
   "compatibility_date": "2026-09-16",
+  "main": "./workers/public.mjs",
   "workers_dev": false,
   "routes": [
     {
@@ -15,6 +16,23 @@
   ],
   "assets": {
     "directory": "./apps/public/dist",
-    "not_found_handling": "single-page-application"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/3Dprojects/api/*"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rekixo-3d-production",
+      "database_id": "43423a10-66b2-4460-af5f-f6ab9f2947dc"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MODEL_ASSETS",
+      "bucket_name": "rekixo-3d-assets"
+    }
+  ]
 }
