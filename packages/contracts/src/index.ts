@@ -58,8 +58,10 @@ export interface Scene3D {
 export interface Public3DExperience {
   project: Project3D;
   scene?: Scene3D;
+  scenes?: Scene3D[];
   camera?: CameraPreset3D;
   model?: Model3D;
+  mediaBaseUrl?: string;
 }
 
 export interface Admin3DProjectStatus {
