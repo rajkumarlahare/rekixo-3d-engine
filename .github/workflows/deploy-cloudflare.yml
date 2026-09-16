@@ -101,15 +101,18 @@ jobs:
               && grep -Fq '<title>AR3D Studio 3D Project</title>' "$PAGE" \
               && [ "$API_STATUS" = "200" ] \
               && grep -Fq '"slug":"jyoti-paradise"' "$API" \
+              && grep -Fq '"id":"model_jyoti_exterior_v1"' "$API" \
+              && grep -Fq '"type":"typical-floor"' "$API" \
+              && grep -Fq '"type":"amenity"' "$API" \
               && [ "$ASSET_STATUS" = "200" ] \
               && [[ "$ASSET_TYPE" == *javascript* ]]; then
-              echo "Public 3D production surface and JavaScript asset verified."
+              echo "Public 3D project data, modules and JavaScript verified."
               rm -f "$PAGE" "$API"
               exit 0
             fi
             echo "Attempt $attempt/5: page=$PAGE_STATUS api=$API_STATUS js=$ASSET_STATUS js_type=$ASSET_TYPE path=$ASSET_PATH"
             echo "API preview:"
-            head -c 600 "$API" || true
+            head -c 1000 "$API" || true
             echo
             rm -f "$PAGE" "$API"
             sleep 5
@@ -141,15 +144,17 @@ jobs:
               && grep -Fq '<title>Rekixo 3D Projects</title>' "$PAGE" \
               && [ "$API_STATUS" = "200" ] \
               && grep -Fq '"bucket":"rekixo-3d-assets"' "$API" \
+              && grep -Fq '"id":"model_jyoti_exterior_v1"' "$API" \
+              && grep -Fq '"type":"section"' "$API" \
               && [ "$ASSET_STATUS" = "200" ] \
               && [[ "$ASSET_TYPE" == *javascript* ]]; then
-              echo "3D Admin production surface and JavaScript asset verified."
+              echo "3D Admin source package, model record and JavaScript verified."
               rm -f "$PAGE" "$API"
               exit 0
             fi
             echo "Attempt $attempt/5: page=$PAGE_STATUS api=$API_STATUS js=$ASSET_STATUS js_type=$ASSET_TYPE path=$ASSET_PATH"
             echo "API preview:"
-            head -c 600 "$API" || true
+            head -c 1000 "$API" || true
             echo
             rm -f "$PAGE" "$API"
             sleep 5
