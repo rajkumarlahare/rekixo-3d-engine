@@ -15,7 +15,6 @@ permissions:
 env:
   CLOUDFLARE_ACCOUNT_ID: 8f31060fbcfee2b3e9309138cad7f12f
   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-  WRANGLER_VERSION: 4.92.0
 
 jobs:
   deploy:
@@ -30,8 +29,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: package.json
 
       - name: Install dependencies
         run: npm install
@@ -53,7 +50,7 @@ jobs:
 
       - name: Apply isolated D1 migrations
         run: >-
-          npx --yes wrangler@${WRANGLER_VERSION}
+          npx --yes wrangler@4
           d1 migrations apply rekixo-3d-production
           --remote
           --config wrangler.infra.jsonc
@@ -62,22 +59,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BUCKETS="$(npx --yes wrangler@${WRANGLER_VERSION} r2 bucket list)"
+          BUCKETS="$(npx --yes wrangler@4 r2 bucket list)"
           if printf '%s\n' "$BUCKETS" | grep -Fq "rekixo-3d-assets"; then
             echo "R2 bucket already exists: rekixo-3d-assets"
           else
-            npx --yes wrangler@${WRANGLER_VERSION} r2 bucket create rekixo-3d-assets
+            npx --yes wrangler@4 r2 bucket create rekixo-3d-assets
           fi
 
       - name: Deploy isolated 3D Admin Worker
         run: >-
-          npx --yes wrangler@${WRANGLER_VERSION}
+          npx --yes wrangler@4
           deploy
           --config wrangler.admin.jsonc
 
       - name: Deploy isolated 3D Public Worker
         run: >-
-          npx --yes wrangler@${WRANGLER_VERSION}
+          npx --yes wrangler@4
           deploy
           --config wrangler.public.jsonc
 
