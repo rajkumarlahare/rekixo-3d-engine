@@ -200,8 +200,8 @@ export function Viewer3D({
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
+    const hostElement = hostRef.current;
+    if (!hostElement) return;
 
     let disposed = false;
     let animationFrame = 0;
@@ -230,7 +230,7 @@ export function Viewer3D({
     );
     renderer.domElement.className = "viewer-canvas";
     renderer.domElement.setAttribute("aria-label", "Interactive 3D project viewer");
-    host.appendChild(renderer.domElement);
+    hostElement.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -275,15 +275,15 @@ export function Viewer3D({
     scene.environment = pmrem.fromScene(room, 0.04).texture;
 
     function updateSize() {
-      const width = Math.max(host.clientWidth, 1);
-      const height = Math.max(host.clientHeight, 1);
+      const width = Math.max(hostElement.clientWidth, 1);
+      const height = Math.max(hostElement.clientHeight, 1);
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
     }
 
     const observer = new ResizeObserver(updateSize);
-    observer.observe(host);
+    observer.observe(hostElement);
     updateSize();
 
     function resetCamera() {
