@@ -1,0 +1,114 @@
+name: Deploy Rekixo 3D Engine
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: rekixo-3d-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: 8f31060fbcfee2b3e9309138cad7f12f
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  WRANGLER_VERSION: 4.92.0
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build admin and public apps
+        run: npm run build
+
+      - name: Require Cloudflare deployment secret
+        shell: bash
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Missing repository secret CLOUDFLARE_API_TOKEN"
+            echo "Add it once in GitHub: Settings > Secrets and variables > Actions > New repository secret."
+            exit 1
+          fi
+
+      - name: Apply isolated D1 migrations
+        run: >-
+          npx --yes wrangler@${WRANGLER_VERSION}
+          d1 migrations apply rekixo-3d-production
+          --remote
+          --config wrangler.infra.jsonc
+
+      - name: Ensure isolated R2 bucket exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUCKETS="$(npx --yes wrangler@${WRANGLER_VERSION} r2 bucket list)"
+          if printf '%s\n' "$BUCKETS" | grep -Fq "rekixo-3d-assets"; then
+            echo "R2 bucket already exists: rekixo-3d-assets"
+          else
+            npx --yes wrangler@${WRANGLER_VERSION} r2 bucket create rekixo-3d-assets
+          fi
+
+      - name: Deploy isolated 3D Admin Worker
+        run: >-
+          npx --yes wrangler@${WRANGLER_VERSION}
+          deploy
+          --config wrangler.admin.jsonc
+
+      - name: Deploy isolated 3D Public Worker
+        run: >-
+          npx --yes wrangler@${WRANGLER_VERSION}
+          deploy
+          --config wrangler.public.jsonc
+
+      - name: Verify public route
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://ar3dstudio.in/3Dprojects/jyoti-paradise"
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent --show-error "$URL" | grep -Fq "Jyoti Paradise"; then
+              echo "Public 3D route verified: $URL"
+              exit 0
+            fi
+            echo "Waiting for public route propagation (attempt $attempt/5)..."
+            sleep 5
+          done
+          echo "::error::Public 3D route did not verify after deployment."
+          exit 1
+
+      - name: Verify admin route
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://admin.rekixo.com/3Dprojects"
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent --show-error "$URL" | grep -Fq "3D Project Engine"; then
+              echo "3D Admin route verified: $URL"
+              exit 0
+            fi
+            echo "Waiting for admin route propagation (attempt $attempt/5)..."
+            sleep 5
+          done
+          echo "::error::3D Admin route did not verify after deployment."
+          exit 1
