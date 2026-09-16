@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   FIRST_PROJECT_SLUG,
   PUBLIC_BASE_PATH,
+  type Public3DExperience,
 } from "@rekixo/3d-contracts";
+import { loadPublicExperience } from "./api";
+import { Viewer3D } from "./viewer/Viewer3D";
 import "./styles.css";
 
 function currentSlug() {
@@ -13,63 +16,160 @@ function currentSlug() {
   return decodeURIComponent(pathname.slice(prefix.length).split("/")[0] || "");
 }
 
-function App() {
-  const slug = currentSlug();
-  const knownProject = slug === FIRST_PROJECT_SLUG;
+const moduleLabels = [
+  ["Project Navigation", "Live"],
+  ["Section View", "Coming next"],
+  ["Wing Distance", "Coming next"],
+  ["Balcony View", "Coming next"],
+  ["Typical Floor", "Coming next"],
+  ["Amenities", "Coming next"],
+] as const;
 
-  if (!knownProject) {
+function LoadingPage() {
+  return (
+    <main className="loading-page">
+      <div className="brand-mark" aria-hidden="true">
+        AR
+      </div>
+      <p className="eyebrow">AR3D STUDIO</p>
+      <h1>Preparing 3D project</h1>
+      <div className="loading-line" />
+    </main>
+  );
+}
+
+function NotFound({ message }: { message?: string }) {
+  return (
+    <main className="not-found">
+      <p className="eyebrow">AR3D STUDIO</p>
+      <h1>3D project unavailable</h1>
+      <p>{message ?? "The requested project is not currently published."}</p>
+    </main>
+  );
+}
+
+function App() {
+  const slug = useMemo(currentSlug, []);
+  const [experience, setExperience] = useState<Public3DExperience>();
+  const [error, setError] = useState<string>();
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (!slug) return;
+    const controller = new AbortController();
+    setError(undefined);
+
+    void loadPublicExperience(slug, controller.signal)
+      .then(setExperience)
+      .catch((reason: unknown) => {
+        if (controller.signal.aborted) return;
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : "Could not load the 3D project.",
+        );
+      });
+
+    return () => controller.abort();
+  }, [slug, attempt]);
+
+  if (!slug) return <NotFound />;
+  if (error) {
     return (
       <main className="not-found">
         <p className="eyebrow">AR3D STUDIO</p>
-        <h1>3D project not found</h1>
-        <p>The requested 3D project is not published in this foundation build.</p>
+        <h1>3D experience could not start</h1>
+        <p>{error}</p>
+        <button type="button" onClick={() => setAttempt((value) => value + 1)}>
+          Try again
+        </button>
       </main>
     );
   }
+  if (!experience) return <LoadingPage />;
+
+  const { project, model, camera } = experience;
 
   return (
     <main className="experience">
-      <header>
-        <div>
-          <p className="eyebrow">AR3D STUDIO</p>
-          <h1>Jyoti Paradise</h1>
-          <p className="location">Hingna, Nagpur</p>
+      <header className="project-header">
+        <a
+          className="brand"
+          href="https://ar3dstudio.in"
+          aria-label="AR3D Studio home"
+        >
+          <span>AR</span>
+          <div>
+            <strong>AR3D STUDIO</strong>
+            <small>Interactive Real Estate</small>
+          </div>
+        </a>
+
+        <div className="project-heading">
+          <p className="eyebrow">3D PROJECT EXPERIENCE</p>
+          <h1>{project.name}</h1>
+          <p className="location">{project.location}</p>
         </div>
-        <span className="phase">Foundation</span>
+
+        <span className="production-badge">
+          <i aria-hidden="true" />
+          Production
+        </span>
       </header>
 
-      <section className="viewer-placeholder" aria-label="3D viewer placeholder">
-        <div className="building-mark" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
+      <section className="viewer-section">
+        <Viewer3D
+          modelUrl={model?.available ? model.url : undefined}
+          cameraPreset={camera}
+          modelLabel={model?.name}
+        />
+      </section>
+
+      <section className="experience-info">
         <div>
-          <p className="eyebrow">3D EXPERIENCE</p>
-          <h2>Viewer slot is isolated and ready.</h2>
+          <p className="eyebrow">EXPLORE</p>
+          <h2>One project. Every view.</h2>
           <p>
-            The optimized Jyoti Paradise GLB, camera controls, and scene loading
-            will be connected after the dedicated Cloudflare D1/R2 resources are
-            created.
+            The viewer is built for touch screens, desktop browsers and mobile
+            devices. Project modules load independently so the experience stays
+            fast as more scenes are published.
           </p>
+        </div>
+
+        <div className="model-card">
+          <span>MODEL STATUS</span>
+          <strong>
+            {model?.available
+              ? `${model.name} · v${model.version}`
+              : "Approved web model pending"}
+          </strong>
+          <small>
+            {model?.available
+              ? "Optimized GLB delivered from dedicated 3D storage."
+              : "The engine is live; preview geometry is shown until the approved GLB is uploaded."}
+          </small>
         </div>
       </section>
 
-      <nav className="module-nav" aria-label="Planned 3D modules">
-        {[
-          "Project Navigation",
-          "Section View",
-          "Balcony View",
-          "Typical Floor",
-          "Amenities",
-        ].map((label) => (
-          <button type="button" disabled key={label}>
-            {label}
+      <nav className="module-nav" aria-label="3D project modules">
+        {moduleLabels.map(([label, state], index) => (
+          <button
+            type="button"
+            className={index === 0 ? "module module--active" : "module"}
+            disabled={index !== 0}
+            key={label}
+          >
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <strong>{label}</strong>
+            <small>{state}</small>
           </button>
         ))}
       </nav>
 
-      <footer>Public route: {PUBLIC_BASE_PATH}/{FIRST_PROJECT_SLUG}</footer>
+      <footer>
+        <span>AR3D Studio · Rekixo 3D Engine</span>
+        <span>{PUBLIC_BASE_PATH}/{FIRST_PROJECT_SLUG}</span>
+      </footer>
     </main>
   );
 }
