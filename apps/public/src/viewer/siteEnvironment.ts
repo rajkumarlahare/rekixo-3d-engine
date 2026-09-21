@@ -8,10 +8,10 @@ function roundedRectTexture(renderer: THREE.WebGLRenderer) {
   if (!ctx) return undefined;
 
   const gradient = ctx.createLinearGradient(0, 0, 0, 512);
-  gradient.addColorStop(0, "#9fc5df");
-  gradient.addColorStop(0.46, "#dbe5e9");
-  gradient.addColorStop(0.7, "#eac9a7");
-  gradient.addColorStop(1, "#a98a72");
+  gradient.addColorStop(0, "#2f5f98");
+  gradient.addColorStop(0.42, "#6f99c5");
+  gradient.addColorStop(0.72, "#c8d6df");
+  gradient.addColorStop(1, "#e8b98b");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 512, 512);
 
@@ -27,22 +27,6 @@ function roundedRectTexture(renderer: THREE.WebGLRenderer) {
   texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
   texture.needsUpdate = true;
   return texture;
-}
-
-function makeShrub(scale: number) {
-  const group = new THREE.Group();
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x315f3d,
-    roughness: 0.94,
-    metalness: 0,
-  });
-  const geometry = new THREE.IcosahedronGeometry(scale, 2);
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.scale.set(1, 0.8, 1);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  group.add(mesh);
-  return group;
 }
 
 function disposeGroup(group: THREE.Object3D) {
@@ -75,6 +59,7 @@ export function createArchitecturalSiteEnvironment(
         map: skyTexture,
         side: THREE.BackSide,
         fog: false,
+        toneMapped: false,
       }),
     );
     sky.position.copy(center);
