@@ -44,6 +44,8 @@ type FloorSettings = {
   title?: string;
   mediaKey?: string;
   units?: UnitFact[];
+  verifiedSpaces?: string[];
+  drawingNotes?: string[];
 };
 
 type AmenitySettings = {
@@ -381,7 +383,6 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
         .map((item) => ({ ...item, number: unitNumberForFloor(item.series, floor) }))
         .filter((item) => item.number);
 
-  const viewerKey = `${mode}-${floor ?? "all"}-${unit ?? "none"}`;
   const presentationView =
     mode === "project" || mode === "context" || mode === "amenities"
       ? (mode === "context" ? "context" : "aerial")
@@ -399,7 +400,6 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
     <main className="twin-shell">
       <section className="twin-stage">
         <Viewer3D
-          key={viewerKey}
           modelUrl={experience.model?.available ? experience.model.url : undefined}
           cameraPreset={experience.camera}
           modelLabel={experience.model?.name}
@@ -514,6 +514,18 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
                 <small>SELECTED</small>
                 <strong>Flat {unit}</strong>
                 <span>3D unit mesh highlight will activate only after its source boundary is verified.</span>
+              </div>
+            )}
+            {(floorSettings.verifiedSpaces?.length ?? 0) > 0 && (
+              <div className="twin-source-program">
+                <small>ARCHITECTURAL DRAWING VERIFIED</small>
+                <div>
+                  {floorSettings.verifiedSpaces?.map((space) => <span key={space}>{space}</span>)}
+                </div>
+                <p>
+                  These room/common-space labels are present in the supplied architectural drawing.
+                  They are not assigned to a specific flat until the exact geometry boundary is verified.
+                </p>
               </div>
             )}
           </aside>
