@@ -1,6 +1,8 @@
-# Rekixo 3D Engine Deployment
+# Rekixo AR3D Engine Deployment
 
 Deployment is intentionally GitHub-Actions-first, matching the existing Rekixo/Tiyansh operating model.
+
+Repository rename target: `rekixo-ar3d-engine`. The existing D1, R2, Worker and route names below are stable production identifiers and are intentionally not renamed.
 
 ## Normal developer flow
 

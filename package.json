@@ -1,5 +1,5 @@
 {
-  "name": "rekixo-3d-engine",
+  "name": "rekixo-ar3d-engine",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,8 @@
     "dev:admin": "npm run dev --workspace @rekixo/3d-admin",
     "dev:public": "npm run dev --workspace @rekixo/3d-public",
     "build": "npm run build --workspace @rekixo/3d-admin && npm run build --workspace @rekixo/3d-public",
-    "typecheck": "tsc -p apps/admin/tsconfig.json --noEmit && tsc -p apps/public/tsconfig.json --noEmit"
+    "typecheck": "tsc -p apps/admin/tsconfig.json --noEmit && tsc -p apps/public/tsconfig.json --noEmit",
+    "test": "npm run typecheck && npm run build && node --test tests/*.test.mjs"
   },
   "devDependencies": {
     "@types/react": "19.2.14",

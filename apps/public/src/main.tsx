@@ -299,7 +299,7 @@ function App() {
       </div>
 
       <footer>
-        <span>AR3D Studio · Rekixo 3D Engine</span>
+        <span>AR3D Studio · Rekixo AR3D Engine</span>
         <span>{PUBLIC_BASE_PATH}/{FIRST_PROJECT_SLUG}</span>
       </footer>
     </main>
