@@ -165,6 +165,7 @@ function TypicalFloor({ experience }: { experience: Public3DExperience }) {
   const floorPlan = mediaUrl(experience, settings.mediaKey);
   const units = settings.units ?? [];
   const [floor, setFloor] = useState(1);
+  const [selectedUnit, setSelectedUnit] = useState<string>();
   const visibleUnits = units
     .map((unit) => ({ ...unit, number: unitNumberForFloor(unit.series, floor) }))
     .filter((unit) => unit.number);
@@ -182,7 +183,10 @@ function TypicalFloor({ experience }: { experience: Public3DExperience }) {
             type="button"
             key={item}
             className={floor === item ? "floor-button floor-button--active" : "floor-button"}
-            onClick={() => setFloor(item)}
+            onClick={() => {
+              setFloor(item);
+              setSelectedUnit(undefined);
+            }}
           >
             Floor {item}
           </button>
@@ -192,13 +196,18 @@ function TypicalFloor({ experience }: { experience: Public3DExperience }) {
         <MediaImage src={floorPlan} alt={`${experience.project.name} floor plan`} className="floor-plan-image" />
         <div className="unit-grid">
           {visibleUnits.map((unit) => (
-            <article className="unit-card" key={unit.series}>
+            <button
+              type="button"
+              className={selectedUnit === unit.number ? "unit-card unit-card--selected" : "unit-card"}
+              key={unit.series}
+              onClick={() => setSelectedUnit(unit.number ?? undefined)}
+            >
               <span>FLAT</span>
               <strong>{unit.number}</strong>
               <p>{unit.type}</p>
               <b>{unit.areaSqFt.toLocaleString("en-IN")} Sq. Ft.</b>
               <small>Series {unit.series}</small>
-            </article>
+            </button>
           ))}
           {!visibleUnits.length && (
             <div className="media-placeholder">
@@ -208,6 +217,17 @@ function TypicalFloor({ experience }: { experience: Public3DExperience }) {
           )}
         </div>
       </div>
+      {selectedUnit && (
+        <div className="unit-selection-panel" role="status">
+          <span>SELECTED UNIT</span>
+          <strong>Flat {selectedUnit} · Floor {floor}</strong>
+          <p>
+            This unit identity and area come from the supplied brochure series. Exact 3D room/mesh
+            highlighting is intentionally not guessed until a semantic unit boundary is verified
+            from the architectural source model.
+          </p>
+        </div>
+      )}
     </section>
   );
 }
