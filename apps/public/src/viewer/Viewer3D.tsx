@@ -47,7 +47,7 @@ function disposeObject(root: THREE.Object3D) {
 
 function createPreviewBuilding() {
   const group = new THREE.Group();
-  group.name = "Jyoti Paradise preview geometry";
+  group.name = "Rekixo AR3D preview geometry";
 
   const wall = new THREE.MeshStandardMaterial({
     color: 0xe8edf2,
@@ -442,7 +442,7 @@ export function Viewer3D({
 
       {errorMessage && mode !== "loading" && (
         <div className="viewer-notice">
-          <strong>{modelLabel ?? "Jyoti Paradise"}</strong>
+          <strong>{modelLabel ?? "3D Project"}</strong>
           <span>{errorMessage}</span>
         </div>
       )}
