@@ -19,7 +19,7 @@ test("architectural site environment is model-bounds driven", () => {
   assert.match(environment, /createArchitecturalSiteEnvironment/);
   assert.match(environment, /bounds\.getSize/);
   assert.match(environment, /CircleGeometry/);
-  assert.match(environment, /PlaneGeometry/);
+  assert.doesNotMatch(environment, /generic green field/i);
   assert.match(environment, /setNight/);
 });
 

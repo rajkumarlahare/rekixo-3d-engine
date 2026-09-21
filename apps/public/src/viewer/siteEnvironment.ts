@@ -8,10 +8,10 @@ function roundedRectTexture(renderer: THREE.WebGLRenderer) {
   if (!ctx) return undefined;
 
   const gradient = ctx.createLinearGradient(0, 0, 0, 512);
-  gradient.addColorStop(0, "#9fc5df");
-  gradient.addColorStop(0.46, "#dbe5e9");
-  gradient.addColorStop(0.7, "#eac9a7");
-  gradient.addColorStop(1, "#a98a72");
+  gradient.addColorStop(0, "#2f5f98");
+  gradient.addColorStop(0.42, "#6f99c5");
+  gradient.addColorStop(0.72, "#c8d6df");
+  gradient.addColorStop(1, "#e8b98b");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 512, 512);
 
@@ -27,22 +27,6 @@ function roundedRectTexture(renderer: THREE.WebGLRenderer) {
   texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
   texture.needsUpdate = true;
   return texture;
-}
-
-function makeShrub(scale: number) {
-  const group = new THREE.Group();
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x315f3d,
-    roughness: 0.94,
-    metalness: 0,
-  });
-  const geometry = new THREE.IcosahedronGeometry(scale, 2);
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.scale.set(1, 0.8, 1);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  group.add(mesh);
-  return group;
 }
 
 function disposeGroup(group: THREE.Object3D) {
@@ -75,97 +59,31 @@ export function createArchitecturalSiteEnvironment(
         map: skyTexture,
         side: THREE.BackSide,
         fog: false,
+        toneMapped: false,
       }),
     );
     sky.position.copy(center);
     root.add(sky);
   }
 
-  const grassMaterial = new THREE.MeshStandardMaterial({
-    color: 0x486a42,
+  const groundMaterial = new THREE.MeshStandardMaterial({
+    color: 0x8f8b83,
     roughness: 0.98,
     metalness: 0,
   });
-  const grass = new THREE.Mesh(
-    new THREE.CircleGeometry(span * 1.75, mobile ? 48 : 96),
-    grassMaterial,
+  const ground = new THREE.Mesh(
+    new THREE.CircleGeometry(span * 2.4, mobile ? 48 : 96),
+    groundMaterial,
   );
-  grass.rotation.x = -Math.PI / 2;
-  grass.position.set(center.x, baseY - 0.02, center.z);
-  grass.receiveShadow = true;
-  root.add(grass);
-
-  const pavingMaterial = new THREE.MeshStandardMaterial({
-    color: 0x8c8377,
-    roughness: 0.86,
-    metalness: 0.01,
-  });
-  const apron = new THREE.Mesh(
-    new THREE.PlaneGeometry(size.x * 1.35, Math.max(size.z * 0.24, 3.4)),
-    pavingMaterial,
-  );
-  apron.rotation.x = -Math.PI / 2;
-  apron.position.set(center.x, baseY + 0.008, bounds.max.z + Math.max(size.z * 0.11, 1.2));
-  apron.receiveShadow = true;
-  root.add(apron);
-
-  const roadMaterial = new THREE.MeshStandardMaterial({
-    color: 0x25282b,
-    roughness: 0.95,
-    metalness: 0,
-  });
-  const road = new THREE.Mesh(
-    new THREE.PlaneGeometry(size.x * 2.8, Math.max(size.z * 0.42, 5.5)),
-    roadMaterial,
-  );
-  road.rotation.x = -Math.PI / 2;
-  road.position.set(center.x, baseY + 0.004, bounds.max.z + Math.max(size.z * 0.42, 5));
-  road.receiveShadow = true;
-  root.add(road);
-
-  const curbMaterial = new THREE.MeshStandardMaterial({
-    color: 0xc7c2b8,
-    roughness: 0.8,
-    metalness: 0,
-  });
-  for (const offset of [-1, 1]) {
-    const curb = new THREE.Mesh(
-      new THREE.BoxGeometry(size.x * 1.55, 0.12, 0.18),
-      curbMaterial,
-    );
-    curb.position.set(
-      center.x,
-      baseY + 0.05,
-      bounds.max.z + Math.max(size.z * (offset < 0 ? 0.2 : 0.63), offset < 0 ? 2.5 : 7),
-    );
-    curb.castShadow = true;
-    curb.receiveShadow = true;
-    root.add(curb);
-  }
-
-  if (!mobile) {
-    const shrubScale = Math.max(span * 0.025, 0.35);
-    const positions = [
-      [-0.62, 0.56], [-0.38, 0.62], [-0.13, 0.6], [0.14, 0.61], [0.42, 0.58], [0.66, 0.55],
-      [-0.74, -0.45], [0.74, -0.45],
-    ];
-    for (const [px, pz] of positions) {
-      const shrub = makeShrub(shrubScale);
-      shrub.position.set(
-        center.x + size.x * px,
-        baseY + shrubScale * 0.7,
-        center.z + size.z * pz,
-      );
-      root.add(shrub);
-    }
-  }
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.set(center.x, baseY - 0.03, center.z);
+  ground.receiveShadow = true;
+  root.add(ground);
 
   return {
     root,
     setNight(night: boolean) {
-      grassMaterial.color.setHex(night ? 0x1f3426 : 0x486a42);
-      pavingMaterial.color.setHex(night ? 0x49443f : 0x8c8377);
-      roadMaterial.color.setHex(night ? 0x141619 : 0x25282b);
+      groundMaterial.color.setHex(night ? 0x303238 : 0x8f8b83);
     },
     dispose() {
       skyTexture?.dispose();

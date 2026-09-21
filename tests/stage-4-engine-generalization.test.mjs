@@ -72,7 +72,8 @@ test("historical Jyoti migrations remain immutable compatibility history", () =>
     "0003_jyoti_supplied_content_v1.sql",
   ]);
   for (const migration of migrations.slice(3)) {
-    assert.match(migration, /^000[4-9]_/, `new migrations must be additive after 0003: ${migration}`);
+    const prefix = Number(migration.slice(0, 4));
+    assert.ok(Number.isInteger(prefix) && prefix >= 4, `new migrations must be additive after 0003: ${migration}`);
   }
   assert.match(read("database/migrations/0001_core.sql"), /jyoti-paradise/);
 });

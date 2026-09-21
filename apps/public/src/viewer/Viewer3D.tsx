@@ -605,9 +605,9 @@ export function Viewer3D({
         const target = focus.target.clone();
         const position =
           nextMode === "interior"
-            ? target.clone().add(new THREE.Vector3(radius * 1.25, radius * 0.9, radius * 1.45))
-            : target.clone().add(new THREE.Vector3(radius * 1.1, radius * 1.0, radius * 1.25));
-        const toFov = nextMode === "interior" ? 46 : 40;
+            ? target.clone().add(new THREE.Vector3(radius * 0.42, radius * 1.75, radius * 0.82))
+            : target.clone().add(new THREE.Vector3(radius * 0.75, radius * 1.35, radius * 1.05));
+        const toFov = nextMode === "interior" ? 38 : 39;
 
         if (instant) {
           camera.position.copy(position);
