@@ -441,6 +441,20 @@ footer { padding-top: 24px; display: flex; justify-content: space-between; gap: 
   border-color: #5c7b98;
   background: #0b1b2a;
 }
+.twin-stage .viewer-walk-controls {
+  left: 112px;
+  bottom: 88px;
+}
+.twin-stage .viewer-walk-controls button {
+  width: 50px;
+  height: 50px;
+  border-color: #52708a;
+  background: #07131ee8;
+  box-shadow: 0 10px 30px #0008;
+}
+.twin-walk-panel {
+  pointer-events: none;
+}
 .viewer-action:disabled {
   opacity: .42;
   cursor: not-allowed;
@@ -859,6 +873,15 @@ footer { padding-top: 24px; display: flex; justify-content: space-between; gap: 
     width: min(278px, calc(100vw - 78px));
     max-height: 44vh;
     padding: 13px;
+  }
+  .twin-walk-panel { display: none; }
+  .twin-stage .viewer-walk-controls {
+    left: 70px;
+    bottom: 78px;
+  }
+  .twin-stage .viewer-walk-controls button {
+    width: 46px;
+    height: 46px;
   }
   .twin-floor-strip {
     left: 66px;
