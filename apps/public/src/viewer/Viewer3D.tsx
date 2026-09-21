@@ -250,8 +250,8 @@ export function Viewer3D({
     scene.background = new THREE.Color(0x8faec8);
     scene.fog = new THREE.FogExp2(0xa9bfd0, 0.0015);
     if (referenceVisual) {
-      scene.background = new THREE.Color(0x8195aa);
-      scene.fog = new THREE.FogExp2(0x93a4b3, 0.00125);
+      scene.background = new THREE.Color(0x75889c);
+      scene.fog = new THREE.FogExp2(0x8798a8, 0.00105);
     }
     let modelBounds: THREE.Box3 | undefined;
 
@@ -537,7 +537,7 @@ export function Viewer3D({
       scene.add(object);
       object.updateMatrixWorld(true);
       modelBounds = new THREE.Box3().setFromObject(object);
-      enhanceArchitecturalModel(object, renderer);
+      enhanceArchitecturalModel(object, renderer, referenceVisual);
       floorExploder = createFloorExploder(object, modelBounds);
       explodeRef.current = (enabled) => floorExploder?.setExploded(enabled);
 
