@@ -319,7 +319,7 @@ function makeBrochureTypicalFloor(features: ExperienceFeature[]) {
   for (let i = 0; i < 8; i += 1) {
     stair.add(box([2.15, 0.12 + i * 0.04, 0.33], standard(0x666b70, 0.74), [-3.3, 0.08 + i * 0.04, -3.1 + i * 0.33]));
   }
-  const stairPick = box([2.35, 0.1, 2.8], new THREE.MeshBasicMaterial({ visible: false }), [-3.3, 0.05, -2.0]);
+  const stairPick = box([2.35, 0.1, 2.8], new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), [-3.3, 0.05, -2.0]);
   tagFeature(features, stairPick, "stair", "Staircase", "Common", "Common staircase shown on the brochure floor plan.");
   stair.add(stairPick);
   root.add(stair);
