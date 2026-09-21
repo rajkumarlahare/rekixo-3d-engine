@@ -4,9 +4,9 @@ import test from "node:test";
 
 const read = (file) => fs.readFileSync(file, "utf8");
 
-test("Jyoti alone receives the dedicated full-screen digital twin shell", () => {
+test("premium presentation profile receives the dedicated full-screen digital twin shell", () => {
   const app = read("apps/public/src/main.tsx");
-  assert.match(app, /experience\.project\.slug === "jyoti-paradise"/);
+  assert.match(app, /presentation\?\.style === "premium-real-estate-digital-twin"/);
   assert.match(app, /JyotiDigitalTwin/);
   assert.match(app, /Project Navigation/);
   assert.match(app, /Building Explorer/);
@@ -14,6 +14,7 @@ test("Jyoti alone receives the dedicated full-screen digital twin shell", () => 
   assert.match(app, /Unit Explorer/);
   assert.match(app, /Balcony View/);
   assert.match(app, /Distance & Context/);
+  assert.doesNotMatch(app, /project\.slug === "jyoti-paradise"/);
 });
 
 test("digital twin viewer supports reference-style presentation cameras", () => {
