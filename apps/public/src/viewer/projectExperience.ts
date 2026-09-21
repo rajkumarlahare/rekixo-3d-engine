@@ -436,7 +436,7 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
 
   const flower = makeFlowerStrip(Math.max(spanX * 0.92, 6));
   flower.position.set(center.x, baseY + 0.06, bounds.max.z + spanZ * 0.17);
-  addFeature(siteRoot, features, flower, "landscape", "Front Landscaping", "Shrubs and flower strip following the exterior render intent.");
+  addFeature(siteRoot, features, flower, "landscape", "Front Landscaping", "Landscape", "Shrubs and flower strip following the exterior render intent.");
 
   if (!mobile) {
     for (const [xRatio, zRatio, h] of [
