@@ -41,6 +41,27 @@ const sourceMaterialTint: Record<string, number> = {
   tile_large_brown: 0xc3b29f,
 };
 
+// The FBX diffuse colors above remain the source-of-truth audit values.
+// This second layer is a presentation calibration derived from the supplied
+// supplied brochure/exterior render. It intentionally changes only the
+// web-viewer appearance so the live model reads like the approved warm facade
+// instead of a flat white/grey CAD viewport.
+const referenceFacadeTint: Record<string, number> = {
+  frontcolor: 0xeee9e2,
+  color_m00: 0xf3efe8,
+  color_m06: 0x343a3f,
+  slate_light_tile: 0x30363a,
+  slate: 0x51575a,
+  metal_panel: 0x77513f,
+  color_a06: 0xa06d51,
+  color_j08: 0xb8c9bd,
+  translucent_glass_blue: 0x718995,
+  tile_mosaic_multi: 0x805a4b,
+  tile_ceramic_multi: 0x8b5e48,
+  tile_large_brown: 0xa27860,
+  roofing_slate_tan: 0x86614d,
+};
+
 function normalizedMaterialName(name: string) {
   return name.trim().toLowerCase().replaceAll(" ", "_");
 }
@@ -53,7 +74,8 @@ function applySourceTexture(
   anisotropy: number,
 ) {
   const key = material.name.replaceAll(" ", "_");
-  const tint = sourceMaterialTint[normalizedMaterialName(material.name)];
+  const normalized = normalizedMaterialName(material.name);
+  const tint = referenceFacadeTint[normalized] ?? sourceMaterialTint[normalized];
   const dataUrl = sourceTextureData[key] ?? sourceTextureData[material.name];
   if (!dataUrl) return;
 
@@ -81,7 +103,8 @@ function applySourceTexture(
       texture.needsUpdate = true;
       sourceTextureCache.set(key, texture);
       for (const target of sourceTextureWaiters.get(key) ?? []) {
-        const targetTint = sourceMaterialTint[normalizedMaterialName(target.name)];
+        const normalizedTarget = normalizedMaterialName(target.name);
+        const targetTint = referenceFacadeTint[normalizedTarget] ?? sourceMaterialTint[normalizedTarget];
         if (targetTint !== undefined) target.color.setHex(targetTint);
         target.map = texture;
         target.needsUpdate = true;
@@ -135,24 +158,32 @@ export function enhanceArchitecturalModel(
       tuneTexture(material.emissiveMap, anisotropy);
       applySourceTexture(material, anisotropy);
 
-      const sourceTint = sourceMaterialTint[name];
-      if (sourceTint !== undefined && !material.map) {
-        material.color.setHex(sourceTint);
+      const displayTint = referenceFacadeTint[name] ?? sourceMaterialTint[name];
+      if (displayTint !== undefined && !material.map) {
+        material.color.setHex(displayTint);
       }
       material.envMapIntensity = 0.72;
 
       if (name === "frontcolor") {
-        material.roughness = 0.78;
+        material.roughness = 0.74;
         material.metalness = 0.01;
-      } else if (name === "color_m06") {
-        material.roughness = 0.56;
-        material.metalness = 0.07;
+      } else if (name === "color_m06" || name === "slate_light_tile") {
+        material.roughness = 0.48;
+        material.metalness = 0.06;
       } else if (name === "color_m00") {
-        material.roughness = 0.78;
+        material.roughness = 0.76;
         material.metalness = 0.01;
-      } else if (name === "color_a06") {
-        material.roughness = 0.56;
+      } else if (name === "color_a06" || name === "tile_ceramic_multi" || name === "tile_large_brown") {
+        material.roughness = 0.52;
         material.metalness = 0.02;
+      } else if (name === "metal_panel") {
+        // In the reference elevation this reads as warm architectural cladding,
+        // not bare silver metal.
+        material.roughness = 0.5;
+        material.metalness = 0.12;
+      } else if (name === "color_j08") {
+        material.roughness = 0.72;
+        material.metalness = 0.01;
       }
 
       if (/glass|window|translucent/.test(name)) {
