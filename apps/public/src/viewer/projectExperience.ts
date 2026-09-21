@@ -1,15 +1,6 @@
 import * as THREE from "three";
-import { makeReferenceFacadeBuilding } from "./referenceFacade";
 
 export type ExperienceMode = "site" | "interior" | "terrace";
-
-export type ExperiencePresentationView =
-  | "default"
-  | "aerial"
-  | "building"
-  | "top"
-  | "balcony"
-  | "context";
 
 export type ExperienceFeature = {
   id: string;
@@ -544,9 +535,7 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean, ref
   const siteRoot = new THREE.Group();
   const interiorRoot = new THREE.Group();
   const terraceRoot = new THREE.Group();
-  const referenceShellRoot = new THREE.Group();
-  referenceShellRoot.name = "reference-shell-root";
-  root.add(siteRoot, interiorRoot, terraceRoot, referenceShellRoot);
+  root.add(siteRoot, interiorRoot, terraceRoot);
 
   const features: ExperienceFeature[] = [];
   const size = bounds.getSize(new THREE.Vector3());
@@ -652,19 +641,6 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean, ref
 
   addFacadeWarmLights(siteRoot, bounds, mobile);
 
-  const referenceShell = referenceVisual
-    ? makeReferenceFacadeBuilding(bounds, mobile)
-    : undefined;
-  if (referenceShell) referenceShellRoot.add(referenceShell);
-
-  let presentationView: ExperiencePresentationView = "default";
-  const shellAllowed = () =>
-    Boolean(referenceShell) &&
-    (presentationView === "default" ||
-      presentationView === "aerial" ||
-      presentationView === "building" ||
-      presentationView === "balcony");
-
   const interior = makeBrochureTypicalFloor(features);
   const floorScale = Math.min(
     (spanX * 1.25) / 14.4,
@@ -680,7 +656,6 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean, ref
 
   interiorRoot.visible = false;
   terraceRoot.visible = false;
-  referenceShellRoot.visible = shellAllowed();
 
   return {
     root,
@@ -689,14 +664,6 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean, ref
       siteRoot.visible = mode === "site";
       interiorRoot.visible = mode === "interior";
       terraceRoot.visible = mode === "terrace";
-      referenceShellRoot.visible = mode === "site" && shellAllowed();
-    },
-    setPresentationView(view: ExperiencePresentationView) {
-      presentationView = view;
-      referenceShellRoot.visible = siteRoot.visible && shellAllowed();
-    },
-    usesReferenceShell() {
-      return referenceShellRoot.visible;
     },
     setNight(night: boolean) {
       siteRoot.traverse((object) => {
@@ -718,8 +685,7 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean, ref
         const box3 = new THREE.Box3().setFromObject(terraceRoot);
         return { box: box3, target: box3.getCenter(new THREE.Vector3()) };
       }
-      const targetRoot = referenceShellRoot.visible ? referenceShellRoot : siteRoot;
-      const box3 = new THREE.Box3().setFromObject(targetRoot);
+      const box3 = new THREE.Box3().setFromObject(siteRoot);
       return { box: box3, target: box3.getCenter(new THREE.Vector3()) };
     },
     dispose() {
