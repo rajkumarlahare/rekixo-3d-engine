@@ -33,11 +33,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Build admin and public apps
-        run: npm run build
+      - name: Verify generalized Engine
+        run: npm test
 
       - name: Require Cloudflare deployment secret
         shell: bash
@@ -77,12 +74,24 @@ jobs:
           deploy
           --config wrangler.public.jsonc
 
-      - name: Verify public production surface
+      - name: Verify generic admin project registry
         shell: bash
         run: |
           set -euo pipefail
-          PAGE_URL="https://ar3dstudio.in/3Dprojects/jyoti-paradise"
-          API_URL="https://ar3dstudio.in/3Dprojects/api/projects/jyoti-paradise"
+          API_URL="https://admin.rekixo.com/3Dprojects/api/projects"
+          STATUS="$(curl --location --silent --show-error --output /tmp/engine-projects.json --write-out '%{http_code}' "$API_URL" || true)"
+          [ "$STATUS" = "200" ]
+          grep -Fq '"projects":[' /tmp/engine-projects.json
+          echo "Generic 3D project registry verified."
+
+      # Jyoti Paradise is the existing live compatibility fixture, not an Engine default.
+      - name: Verify legacy Jyoti public production fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          FIXTURE_SLUG="jyoti-paradise"
+          PAGE_URL="https://ar3dstudio.in/3Dprojects/${FIXTURE_SLUG}"
+          API_URL="https://ar3dstudio.in/3Dprojects/api/projects/${FIXTURE_SLUG}"
           ORIGIN="https://ar3dstudio.in"
           for attempt in 1 2 3 4 5; do
             PAGE="$(mktemp)"
@@ -120,12 +129,14 @@ jobs:
           echo "::error::Public 3D production surface did not verify."
           exit 1
 
-      - name: Verify admin production surface
+      # Jyoti Paradise remains a live smoke fixture only; admin selection itself is dynamic.
+      - name: Verify legacy Jyoti admin production fixture
         shell: bash
         run: |
           set -euo pipefail
+          FIXTURE_SLUG="jyoti-paradise"
           PAGE_URL="https://admin.rekixo.com/3Dprojects"
-          API_URL="https://admin.rekixo.com/3Dprojects/api/status?slug=jyoti-paradise"
+          API_URL="https://admin.rekixo.com/3Dprojects/api/status?slug=${FIXTURE_SLUG}"
           ORIGIN="https://admin.rekixo.com"
           for attempt in 1 2 3 4 5; do
             PAGE="$(mktemp)"
