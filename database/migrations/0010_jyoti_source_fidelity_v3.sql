@@ -8,7 +8,7 @@ UPDATE scenes_3d
  WHERE id = 'scene_jyoti_project_navigation';
 
 UPDATE scenes_3d
-   SET settings_json = '{"status":"ready","source":"Jyoti Paradise brochure + supplied DWG","title":"1st to 3rd Floor Plan","mediaKey":"projects/jyoti-paradise/media/floor-plan-v1.webp","floors":[1,2,3,4,5],"floorPattern":"G+5+terrace","units":[{"series":"101 to 501","type":"2BHK","areaSqFt":972},{"series":"102 to 502","type":"2BHK","areaSqFt":949},{"series":"103 to 403","type":"2BHK","areaSqFt":940}],"verifiedSpaces":["Living","Kitchen","Bed Room","Toilet","Lift","Fire Lift","Stair","Floor Landing","Balcony","Duct"],"typicalFloor3d":"brochure-backed-dollhouse-v1","note":"Room dimensions and common-space arrangement are taken from the supplied brochure floor-plan render/DWG. Exact source FBX mesh ownership remains separate from this brochure-backed dollhouse."}',
+   SET settings_json = '{"status":"ready","source":"Jyoti Paradise brochure + supplied DWG","title":"1st to 3rd Floor Plan","mediaKey":"projects/jyoti-paradise/media/floor-plan-v1.webp","floors":[1,2,3,4,5],"floorPattern":"G+5+terrace","units":[{"series":"101 to 501","type":"2BHK","areaSqFt":972},{"series":"102 to 502","type":"2BHK","areaSqFt":949},{"series":"103 to 403","type":"2BHK","areaSqFt":940}],"verifiedSpaces":["Living","Kitchen","Bed Room","Toilet","Lift","Fire Lift","Stair","Floor Landing","Balcony","Duct"],"typicalFloor3d":"brochure-backed-dollhouse-v1","note":"Room dimensions and common-space arrangement are taken from the supplied brochure floor-plan render and DWG, with clear DWG dimensions preferred where the two differ. Exact source FBX mesh ownership remains separate from this brochure-backed dollhouse."}',
        updated_at = datetime('now')
  WHERE id = 'scene_jyoti_typical_floor_v1';
 
