@@ -1,5 +1,6 @@
 export const ADMIN_BASE_PATH = "/3Dprojects" as const;
 export const PUBLIC_BASE_PATH = "/3Dprojects" as const;
+export const PLATFORM_ENGINE_CONTRACT_VERSION = 1 as const;
 
 export type Project3DStatus = "draft" | "published" | "archived";
 
@@ -82,4 +83,12 @@ export interface Admin3DProjectStatus {
     bucket: string;
     activeModelObjectAvailable: boolean;
   };
+}
+
+
+export interface PlatformEngineProjectContract {
+  contractVersion: typeof PLATFORM_ENGINE_CONTRACT_VERSION;
+  project: Project3D;
+  enabledSceneCount: number;
+  activeModelAvailable: boolean;
 }
