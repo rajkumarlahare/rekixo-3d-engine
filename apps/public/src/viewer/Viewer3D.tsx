@@ -404,9 +404,11 @@ export function Viewer3D({
       floorExploder?.reset();
       renderer.clippingPlanes = [];
 
-      const interiorWalk = experienceMode === "interior" && projectExperience;
-      activeWalkBounds = interiorWalk
-        ? projectExperience.focus("interior").box.clone()
+      const interiorExperience =
+        experienceMode === "interior" ? projectExperience : undefined;
+      const interiorWalk = Boolean(interiorExperience);
+      activeWalkBounds = interiorExperience
+        ? interiorExperience.focus("interior").box.clone()
         : modelBounds.clone();
 
       if (interiorWalk) {
