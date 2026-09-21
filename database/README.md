@@ -8,7 +8,7 @@ Database ID: `43423a10-66b2-4460-af5f-f6ab9f2947dc`
 
 Migrations are additive and owned only by this repository. They must never target `tiyansh-production`.
 
-Phase 1 uses only the core tables needed to get the first Jyoti Paradise viewer working:
+Current core tables include:
 
 - `projects_3d`
 - `models_3d`
@@ -16,19 +16,26 @@ Phase 1 uses only the core tables needed to get the first Jyoti Paradise viewer 
 - `scenes_3d`
 - `publish_versions_3d`
 
-Later features such as floors, units, hotspots, media management and advanced scene metadata will be introduced by later numbered migrations. This keeps the initial production schema small and avoids committing unfinished contracts too early.
+Later schema capabilities such as floors, units, hotspots and managed media may be introduced only through new numbered migrations.
 
-## Initial project seed
+## Historical seed
 
-Migration `0001_core.sql` seeds one draft project:
+Migration `0001_core.sql` historically seeded the first production project, Jyoti Paradise. Migrations `0002` and `0003` then added its production viewer/content records.
 
-- id: `project_jyoti_paradise`
-- slug: `jyoti-paradise`
-- name: `Jyoti Paradise`
-- location: `Hingna, Nagpur`
+Those files are **immutable applied migration history**. Stage 4 intentionally does not edit, rename or delete them.
 
-No model or media row is created until the dedicated R2 bucket exists and a web-ready GLB has been uploaded.
+The existence of Jyoti data inside old migrations does not make Jyoti an Engine default.
+
+## New project provisioning
+
+Future projects are data, not migrations.
+
+Use the GitHub Actions workflow:
+
+`Provision Rekixo AR3D Project`
+
+It validates project slug/name/location and inserts an idempotent `draft` project record into `rekixo-3d-production`. It does not publish, create model data, or mutate another project.
 
 ## Safety
 
-Do not manually create duplicate tables in the Cloudflare dashboard. Apply the checked-in migration as a unit. Future deployment automation will use the same migration files.
+Do not manually create duplicate schema tables in Cloudflare. Do not add customer project seeds to new schema migrations. Do not bind this database to the sibling AR3D Platform.
