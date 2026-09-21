@@ -80,7 +80,7 @@ function App() {
   return (
     <main className="shell">
       <header className="topbar">
-        <div><p className="eyebrow">REKIXO</p><h1>3D Project Engine</h1></div>
+        <div><p className="eyebrow">REKIXO</p><h1>AR3D Project Engine</h1></div>
         <div className="topbar-actions">
           <span className="route">{ADMIN_BASE_PATH}</span>
           <button type="button" onClick={() => setRefresh((value) => value + 1)}>Refresh</button>
@@ -153,7 +153,7 @@ function App() {
       </section>
 
       <footer>
-        <span>Current Rekixo/Tiyansh admin and project routes remain isolated and untouched.</span>
+        <span>Rekixo AR3D Platform routes remain isolated and untouched.</span>
         <span>Binary source assets stay in dedicated Rekixo 3D R2 storage.</span>
       </footer>
     </main>
