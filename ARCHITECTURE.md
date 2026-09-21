@@ -35,9 +35,11 @@ Public surface:
 
 `https://ar3dstudio.in/3Dprojects/[slug]`
 
-First project:
+Existing production compatibility fixture:
 
 `https://ar3dstudio.in/3Dprojects/jyoti-paradise`
+
+The Engine has no runtime default project. Public project identity comes only from `/3Dprojects/[slug]`; Admin project identity comes from the D1 project registry and explicit selection.
 
 The exact path segment is `3Dprojects` with an uppercase `D`.
 
@@ -109,7 +111,9 @@ The 3D database is project-scoped. Planned entities:
 - `media_3d`
 - `publish_versions_3d`
 
-Each row that belongs to a project must be keyed by the 3D project ID. Jyoti Paradise is only the first project; the engine must remain reusable for future projects.
+Each row that belongs to a project must be keyed by the 3D project ID. No customer project may be encoded as a generic runtime default.
+
+New customer projects are provisioned as draft D1 records through the controlled operator workflow. Customer onboarding is data provisioning, not a new repository and not a new schema migration.
 
 ## 7. Asset policy
 
@@ -132,21 +136,18 @@ Preferred web pipeline:
 
 Large projects should be split by scene/module rather than loaded as one giant model.
 
-## 8. Jyoti Paradise phase-one target
+## 8. Generalized Engine boundary
 
-Phase one is intentionally small:
+Stage 4 establishes these reusable seams:
 
-1. independent repository/workspace
-2. independent admin shell
-3. independent public shell
-4. create `jyoti-paradise` project record
-5. upload one optimized GLB
-6. rotate/zoom 3D viewer
-7. save a default camera preset
-8. preview
-9. publish to `/3Dprojects/jyoti-paradise`
+- `packages/contracts` for transport/domain types;
+- `packages/engine-core` for project slug, path and asset-key rules;
+- D1-backed Admin project registry and explicit project selection;
+- path-derived public project selection;
+- project-neutral viewer/camera fallbacks;
+- controlled draft-project provisioning outside migration history.
 
-Section View, Balcony View, Typical Floor, Amenity Floor, hotspots, advanced floor/unit selection, and photoreal media are later phases built on this base.
+Jyoti Paradise remains an existing production compatibility fixture and retains its current data, URL and assets. It is not a default in generic runtime code.
 
 ## 9. Deployment rule
 
@@ -154,6 +155,12 @@ The Engine repository has its own CI/CD workflow. Deploying the AR3D Engine must
 
 Production routing is configured only after the new Workers, D1, and R2 resources exist and have been verified independently.
 
-## 10. Change-control rule
+## 10. Stage 5 integration boundary
+
+Platform ↔ Engine integration must use an explicit linking/service contract. The Platform must not read Engine model/scene tables directly, and the Engine must not read Platform project/plot tables directly.
+
+Privileged Engine writes require authenticated handoff before upload/edit/publish APIs are enabled.
+
+## 11. Change-control rule
 
 Any patch that would couple the Engine to the AR3D Platform D1/R2 resources, `/admin` surface, or `/projects/*` route must stop and require an explicit architecture decision first.
