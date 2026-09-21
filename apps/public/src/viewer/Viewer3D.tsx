@@ -619,6 +619,12 @@ export function Viewer3D({
       };
 
       const setView = (view: PresentationView, instant = false) => {
+        projectExperience?.setPresentationView(view);
+        if (activeObject) {
+          activeObject.visible =
+            experienceMode !== "interior" &&
+            !(experienceMode === "site" && projectExperience?.usesReferenceShell());
+        }
         const targetView = viewTarget(view);
         if (!targetView) return;
         controls.enabled = true;
