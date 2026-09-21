@@ -61,7 +61,7 @@ New projects are provisioned as **draft** records through the controlled GitHub 
 
 ## Isolation contract
 
-The sibling AR3D Platform uses its own production resources and routes. The 3D Engine must not bind directly to the Platform D1/R2 resources.
+The sibling AR3D Platform uses its own production resources and routes. The 3D Engine must not bind directly to the platform D1/R2 resources.
 
 Later Platform ↔ Engine integration should use an explicit project-link/service contract. A shared database is not the integration boundary.
 
