@@ -25,7 +25,7 @@ interface Viewer3DProps {
   initialExploded?: boolean;
   compactUi?: boolean;
   experienceMode?: ExperienceMode;
-  visualPreset?: "default" | "jyoti-reference";
+  visualPreset?: "default" | "reference-render";
   onFeatureSelect?: (feature: Omit<ExperienceFeature, "object">) => void;
 }
 
@@ -245,10 +245,14 @@ export function Viewer3D({
     const walkKeys = new Set<string>();
 
     const mobile = isMobileDevice();
-    const referenceVisual = visualPreset === "jyoti-reference";
+    const referenceVisual = visualPreset === "reference-render";
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(referenceVisual ? 0x8195aa : 0x8faec8);
-    scene.fog = new THREE.FogExp2(referenceVisual ? 0x93a4b3 : 0xa9bfd0, referenceVisual ? 0.00125 : 0.0015);
+    scene.background = new THREE.Color(0x8faec8);
+    scene.fog = new THREE.FogExp2(0xa9bfd0, 0.0015);
+    if (referenceVisual) {
+      scene.background = new THREE.Color(0x8195aa);
+      scene.fog = new THREE.FogExp2(0x93a4b3, 0.00125);
+    }
     let modelBounds: THREE.Box3 | undefined;
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 2000);
@@ -261,7 +265,8 @@ export function Viewer3D({
     });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = referenceVisual ? 1.03 : 0.9;
+    renderer.toneMappingExposure = 0.9;
+    if (referenceVisual) renderer.toneMappingExposure = 1.03;
     renderer.shadowMap.enabled = !mobile;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.35 : 2));
@@ -285,14 +290,19 @@ export function Viewer3D({
       camera.quaternion.setFromEuler(euler);
     };
 
-    const hemi = new THREE.HemisphereLight(
-      referenceVisual ? 0xd6e4ef : 0xdcecff,
-      referenceVisual ? 0x5b5148 : 0x514b45,
-      referenceVisual ? 1.22 : 1.45,
-    );
+    const hemi = new THREE.HemisphereLight(0xdcecff, 0x514b45, 1.45);
+    if (referenceVisual) {
+      hemi.color.setHex(0xd6e4ef);
+      hemi.groundColor.setHex(0x5b5148);
+      hemi.intensity = 1.22;
+    }
     scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(referenceVisual ? 0xffd3a6 : 0xffe4c2, referenceVisual ? 2.05 : 2.25);
+    const sun = new THREE.DirectionalLight(0xffe4c2, 2.25);
+    if (referenceVisual) {
+      sun.color.setHex(0xffd3a6);
+      sun.intensity = 2.05;
+    }
     sun.position.set(10, 18, 12);
     sun.castShadow = renderer.shadowMap.enabled;
     sun.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
@@ -313,7 +323,8 @@ export function Viewer3D({
     const pmrem = new THREE.PMREMGenerator(renderer);
     const environmentTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = environmentTexture;
-    scene.environmentIntensity = referenceVisual ? 0.58 : 0.65;
+    scene.environmentIntensity = 0.65;
+    if (referenceVisual) scene.environmentIntensity = 0.58;
 
     const updateSize = () => {
       const width = Math.max(hostElement.clientWidth, 1);
