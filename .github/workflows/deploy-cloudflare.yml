@@ -1,4 +1,4 @@
-name: Deploy Rekixo 3D Engine
+name: Deploy Rekixo AR3D Engine
 
 on:
   push:
