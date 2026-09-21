@@ -428,7 +428,7 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
   addFeature(siteRoot, features, plot, "plot", "Project Plot", "Site", "Project parcel shown as a compact paved residential site around the building.");
 
   const parking = box([spanX * 1.35, 0.09, spanZ * 0.58], standard(0x77716b, 0.9), [center.x, baseY + 0.02, center.z + spanZ * 0.18]);
-  addFeature(siteRoot, features, parking, "parking", "Car Parking", "Amenity", "Car Parking is explicitly listed in the supplied Jyoti Paradise brochure.");
+  addFeature(siteRoot, features, parking, "parking", "Car Parking", "Amenity", "Car Parking is explicitly listed in the supplied project brochure.");
 
   const road = makeRoad(spanX * 2.35, Math.max(spanZ * 0.42, 5.2));
   road.position.set(center.x, baseY + 0.04, bounds.max.z + spanZ * 0.52);
