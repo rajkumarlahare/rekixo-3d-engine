@@ -214,6 +214,32 @@ function addSofa(root: THREE.Object3D, x: number, z: number, width: number, rota
   root.add(group);
 }
 
+function addWardrobe(root: THREE.Object3D, x: number, z: number, width: number, rotate = 0) {
+  const group = new THREE.Group();
+  const body = standard(0x78553e, 0.62);
+  group.add(box([width, 1.85, 0.48], body, [0, 0.94, 0]));
+  for (const dx of [-width * 0.24, 0, width * 0.24]) {
+    group.add(box([0.018, 1.62, 0.505], standard(0xa57a59, 0.58), [dx, 0.96, 0.01]));
+  }
+  group.position.set(x, 0, z);
+  group.rotation.y = rotate;
+  root.add(group);
+}
+
+function addLShapeSofa(root: THREE.Object3D, x: number, z: number, rotate = 0) {
+  const group = new THREE.Group();
+  const fabric = standard(0xb9a895, 0.9);
+  group.add(
+    box([2.5, 0.42, 0.74], fabric, [0, 0.26, 0]),
+    box([0.74, 0.42, 1.65], fabric, [-0.88, 0.26, 0.48]),
+    box([2.5, 0.48, 0.16], fabric, [0, 0.58, 0.29]),
+    box([0.16, 0.48, 1.65], fabric, [-1.17, 0.58, 0.48]),
+  );
+  group.position.set(x, 0, z);
+  group.rotation.y = rotate;
+  root.add(group);
+}
+
 function addKitchen(root: THREE.Object3D, x: number, z: number, width: number, rotate = 0) {
   const group = new THREE.Group();
   const cabinet = standard(0x805d43, 0.58);
@@ -263,99 +289,128 @@ function addBalcony(
   unit: string,
   size: [number, number],
   pos: [number, number],
+  railSide: "left" | "right" | "top" | "bottom",
 ) {
   const [w, d] = size;
   const [x, z] = pos;
-  const deck = box([w, 0.12, d], standard(0xc8b392, 0.72), [x, 0.06, z]);
+  const deck = box([w, 0.12, d], standard(0xbda88d, 0.76), [x, 0.06, z]);
   tagFeature(features, deck, id, label, `Flat ${unit}`, `${label} shown from the brochure-backed unit layout.`);
   root.add(deck);
-  const rail = glass(0xa9cfdd, 0.66);
-  root.add(box([w, 0.66, 0.055], rail, [x, 0.38, z + d / 2]));
+
+  const rail = glass(0x9fc3d2, 0.68);
+  const horizontal = railSide === "top" || railSide === "bottom";
+  const railSize: [number, number, number] = horizontal ? [w, 0.66, 0.055] : [0.055, 0.66, d];
+  const railPos: [number, number, number] =
+    railSide === "top" ? [x, 0.38, z + d / 2] :
+    railSide === "bottom" ? [x, 0.38, z - d / 2] :
+    railSide === "left" ? [x - w / 2, 0.38, z] :
+    [x + w / 2, 0.38, z];
+  root.add(box(railSize, rail, railPos));
+
+  // Balcony planters are visible in the supplied brochure renders.
+  const planter = standard(0x6a4634, 0.9);
+  const green = standard(0x477a44, 0.94);
+  for (const offset of [-0.28, 0.28]) {
+    const px = horizontal ? x + offset * w : x + (railSide === "left" ? -0.32 : 0.32) * w;
+    const pz = horizontal ? z + (railSide === "bottom" ? -0.3 : 0.3) * d : z + offset * d;
+    root.add(
+      box([0.22, 0.24, 0.22], planter, [px, 0.18, pz]),
+      box([0.18, 0.28, 0.18], green, [px, 0.42, pz]),
+    );
+  }
 }
 
 function makeBrochureTypicalFloor(features: ExperienceFeature[]) {
   const root = new THREE.Group();
   root.name = "brochure-backed-typical-floor";
 
-  const cream = standard(0xe6dfd1, 0.62);
-  const bath = standard(0x73777b, 0.7);
-  const kitchenFloor = standard(0xd3c7b2, 0.7);
-  const lobbyFloor = standard(0xdad4c9, 0.72);
+  const livingFloor = standard(0xe7dfd3, 0.66);
+  const bathFloor = standard(0x74777a, 0.7);
+  const kitchenFloor = standard(0xd0c3ae, 0.68);
+  const lobbyFloor = standard(0xd9d1c4, 0.74);
+  const ductFloor = standard(0x96999b, 0.92);
 
-  // FLAT 101 - brochure: Living 4.954x3.050, Kitchen 3.279x2.196,
-  // Dining 1.265x1.023, bedrooms 3.679x3.153 and 3.500x3.701.
-  addLowRoom(root, features, "101-living", "Living 4.954 x 3.050", "101-501", [4.95, 3.05], [-3.25, 0.6], cream, "Brochure-backed Flat 101-501 living room.");
-  addLowRoom(root, features, "101-kitchen", "Kitchen 3.379 x 2.196", "101-501", [3.38, 2.2], [-4.25, 3.18], kitchenFloor, "Brochure-backed modular kitchen.");
-  addLowRoom(root, features, "101-dining", "Dining 1.265 x 1.023", "101-501", [1.27, 1.03], [-1.78, 3.12], cream, "Brochure-backed dining space.");
-  addLowRoom(root, features, "101-bed-a", "Bed Room 3.679 x 3.153", "101-501", [3.68, 3.15], [-4.15, 5.92], cream, "Brochure-backed bedroom.");
-  addLowRoom(root, features, "101-bed-b", "Bed Room 3.506 x 3.761", "101-501", [3.51, 3.76], [-0.65, 6.05], cream, "Brochure-backed bedroom.");
-  addLowRoom(root, features, "101-toilet-a", "Toilet 1.20 x 2.13", "101-501", [1.2, 2.13], [-1.25, 4.25], bath, "Brochure-backed toilet.");
-  addLowRoom(root, features, "101-toilet-b", "Toilet 2.542 x 1.565", "101-501", [2.54, 1.57], [-4.45, 8.35], bath, "Brochure-backed toilet.");
-  addBalcony(root, features, "101-balcony", "Balcony 1.416", "101-501", [1.42, 2.85], [-6.45, 0.72]);
-  addBalcony(root, features, "101-wbal", "W. Bal 1.065", "101-501", [1.07, 2.0], [-6.38, 3.33]);
+  // The composition below follows brochure page 2 visually:
+  // 101 upper-left, 102 upper-right, shared duct between them,
+  // common stair/lobby/fire-lift below, and 103 across the lower wing.
 
-  addSofa(root, -3.05, 0.4, 2.35, 0);
-  addKitchen(root, -4.45, 3.1, 2.65, 0);
-  addDining(root, -1.8, 3.1);
-  addBed(root, -4.25, 5.95, 0);
-  addBed(root, -0.7, 6.05, 0);
-  addToilet(root, -1.25, 4.25);
-  addToilet(root, -4.45, 8.35);
+  // FLAT 101 TO 501 — brochure dimensions.
+  addLowRoom(root, features, "101-living", "Living 4.954 x 3.050", "101-501", [4.95, 3.05], [-3.35, 0.75], livingFloor, "Flat 101–501 living room from brochure page 2.", 0.72);
+  addLowRoom(root, features, "101-kitchen", "Kitchen 3.279 x 2.196", "101-501", [3.28, 2.2], [-4.25, 3.42], kitchenFloor, "Flat 101–501 kitchen from brochure page 2.", 0.72);
+  addLowRoom(root, features, "101-dining", "Dining 1.265 x 1.023", "101-501", [1.27, 1.03], [-1.92, 3.5], livingFloor, "Flat 101–501 dining from brochure page 2.", 0.72);
+  addLowRoom(root, features, "101-toilet-a", "Toilet 1.20 x 2.13", "101-501", [1.2, 2.13], [-1.5, 5.0], bathFloor, "Flat 101–501 inner toilet.", 0.72);
+  addLowRoom(root, features, "101-bed-a", "Bed Room 3.679 x 3.153", "101-501", [3.68, 3.15], [-4.5, 6.25], livingFloor, "Flat 101–501 bedroom.", 0.72);
+  addLowRoom(root, features, "101-bed-b", "Bed Room 3.500 x 3.701", "101-501", [3.5, 3.7], [-0.72, 6.55], livingFloor, "Flat 101–501 bedroom.", 0.72);
+  addLowRoom(root, features, "101-toilet-b", "Toilet 2.542 x 1.565", "101-501", [2.54, 1.57], [-4.65, 8.55], bathFloor, "Flat 101–501 upper toilet.", 0.72);
+  addBalcony(root, features, "101-balcony", "Balcony 1.416", "101-501", [1.42, 2.72], [-6.5, 0.85], "left");
+  addBalcony(root, features, "101-wbal", "W. Bal 1.085", "101-501", [1.09, 2.05], [-6.42, 3.6], "left");
 
-  // FLAT 102 - brochure: Living 4.828x3.050, Kitchen 3.416x2.155,
-  // Dining 1.415x1.023, toilet 1.30x2.132. Mirrored around the central duct.
-  addLowRoom(root, features, "102-living", "Living 4.828 x 3.050", "102-502", [4.83, 3.05], [3.25, 0.6], cream, "Brochure-backed Flat 102-502 living room.");
-  addLowRoom(root, features, "102-kitchen", "Kitchen 3.516 x 2.155", "102-502", [3.52, 2.16], [4.25, 3.2], kitchenFloor, "Brochure-backed modular kitchen.");
-  addLowRoom(root, features, "102-dining", "Dining 1.415 x 1.023", "102-502", [1.42, 1.03], [1.73, 3.12], cream, "Brochure-backed dining space.");
-  addLowRoom(root, features, "102-bed-a", "Bed Room 3.383 x 3.761", "102-502", [3.38, 3.76], [4.22, 5.95], cream, "Bedroom placement follows the supplied floor-plan render.");
-  addLowRoom(root, features, "102-bed-b", "Bed Room 3.500 x 3.204", "102-502", [3.5, 3.2], [0.78, 6.03], cream, "Bedroom placement follows the supplied floor-plan render.");
-  addLowRoom(root, features, "102-toilet", "Toilet 1.30 x 2.132", "102-502", [1.3, 2.13], [1.28, 4.28], bath, "Brochure-backed toilet.");
-  addBalcony(root, features, "102-balcony", "Balcony 1.40", "102-502", [1.4, 2.82], [6.3, 0.7]);
-  addBalcony(root, features, "102-wbal", "W. Bal 1.140", "102-502", [1.14, 2.0], [6.28, 3.28]);
+  addSofa(root, -3.25, 0.7, 2.45, 0);
+  addDining(root, -1.95, 3.5, 0);
+  addKitchen(root, -4.25, 3.4, 2.55, 0);
+  addBed(root, -4.55, 6.25, 0);
+  addWardrobe(root, -5.35, 7.35, 1.45, Math.PI / 2);
+  addBed(root, -0.72, 6.55, 0);
+  addWardrobe(root, -1.75, 7.85, 1.5, 0);
+  addToilet(root, -1.5, 5.0, 0);
+  addToilet(root, -4.65, 8.55, 0);
 
-  addSofa(root, 3.08, 0.4, 2.3, Math.PI);
-  addKitchen(root, 4.45, 3.12, 2.7, Math.PI);
-  addDining(root, 1.72, 3.1);
-  addBed(root, 4.25, 5.95, Math.PI);
-  addBed(root, 0.8, 6.05, Math.PI);
-  addToilet(root, 1.28, 4.28, Math.PI);
+  // FLAT 102 TO 502 — brochure dimensions, mirrored right.
+  addLowRoom(root, features, "102-living", "Living 4.828 x 3.050", "102-502", [4.83, 3.05], [3.35, 0.75], livingFloor, "Flat 102–502 living room from brochure page 2.", 0.72);
+  addLowRoom(root, features, "102-kitchen", "Kitchen 3.416 x 2.155", "102-502", [3.42, 2.16], [4.25, 3.42], kitchenFloor, "Flat 102–502 kitchen from brochure page 2.", 0.72);
+  addLowRoom(root, features, "102-dining", "Dining 1.415 x 1.023", "102-502", [1.42, 1.03], [1.95, 3.5], livingFloor, "Flat 102–502 dining from brochure page 2.", 0.72);
+  addLowRoom(root, features, "102-toilet", "Toilet 1.30 x 2.132", "102-502", [1.3, 2.13], [1.5, 5.0], bathFloor, "Flat 102–502 inner toilet.", 0.72);
+  addLowRoom(root, features, "102-bed-a", "Bed Room", "102-502", [3.55, 3.25], [4.45, 6.25], livingFloor, "Upper-right bedroom placement follows brochure page 2.", 0.72);
+  addLowRoom(root, features, "102-bed-b", "Bed Room", "102-502", [3.55, 3.4], [0.75, 6.55], livingFloor, "Upper-middle bedroom placement follows brochure page 2.", 0.72);
+  addBalcony(root, features, "102-balcony", "Balcony 1.40", "102-502", [1.4, 2.72], [6.5, 0.85], "right");
+  addBalcony(root, features, "102-wbal", "W. Bal 1.140", "102-502", [1.14, 2.05], [6.42, 3.6], "right");
 
-  // Shared duct between 101/102.
-  addLowRoom(root, features, "duct", "DUCT 1.80 x 3.26", "Common", [1.8, 3.26], [0, 3.95], standard(0x9a9c9e, 0.92), "Central service duct shown on the supplied typical floor plan.");
+  addSofa(root, 3.25, 0.7, 2.35, Math.PI);
+  addDining(root, 1.95, 3.5, 0);
+  addKitchen(root, 4.25, 3.4, 2.55, Math.PI);
+  addBed(root, 4.55, 6.25, Math.PI);
+  addWardrobe(root, 5.35, 7.35, 1.45, Math.PI / 2);
+  addBed(root, 0.75, 6.55, Math.PI);
+  addWardrobe(root, 1.78, 7.85, 1.5, 0);
+  addToilet(root, 1.5, 5.0, Math.PI);
 
-  // Common lobby and stair block.
-  addLowRoom(root, features, "lobby", "Lobby", "Common", [4.6, 2.1], [-0.25, -2.15], lobbyFloor, "Common lobby linking the three flats, staircase and fire lift.");
+  // Shared duct shown between 101/102 in the combined brochure plan.
+  addLowRoom(root, features, "duct", "DUCT 1.80 x 3.96", "Common", [1.8, 3.96], [0, 4.05], ductFloor, "Central service duct from the combined brochure floor plan.", 0.78);
+
+  // Common stair/lobby/fire-lift zone.
+  addLowRoom(root, features, "lobby", "Lobby", "Common", [4.6, 2.45], [0.35, -2.0], lobbyFloor, "Common lobby connecting stair, fire lift and Flat 103.", 0.72);
   const stair = new THREE.Group();
-  for (let i = 0; i < 8; i += 1) {
-    stair.add(box([2.15, 0.12 + i * 0.04, 0.33], standard(0x666b70, 0.74), [-3.3, 0.08 + i * 0.04, -3.1 + i * 0.33]));
+  for (let i = 0; i < 10; i += 1) {
+    stair.add(box([2.4, 0.1 + i * 0.035, 0.31], standard(0x595d60, 0.78), [-3.45, 0.08 + i * 0.04, -3.15 + i * 0.3]));
   }
-  const stairPick = box([2.35, 0.1, 2.8], new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), [-3.3, 0.05, -2.0]);
-  tagFeature(features, stairPick, "stair", "Staircase", "Common", "Common staircase shown on the brochure floor plan.");
+  const stairPick = box([2.6, 0.1, 3.2], new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), [-3.45, 0.05, -1.85]);
+  tagFeature(features, stairPick, "stair", "Staircase", "Common", "Staircase placement follows the combined brochure plan.");
   stair.add(stairPick);
   root.add(stair);
 
-  addLowRoom(root, features, "fire-lift", "Fire Lift 1.60 x 1.80", "Common", [1.6, 1.8], [2.35, -2.25], standard(0xb7aea1, 0.68), "Fire lift shown on the supplied floor plan.");
-  addLowRoom(root, features, "common-toilet", "Toilet 1.20 x 1.80", "Common", [1.2, 1.8], [4.0, -2.2], bath, "Common toilet beside the fire lift.");
+  addLowRoom(root, features, "fire-lift", "Fire Lift 1.60 x 1.80", "Common", [1.6, 1.8], [2.35, -2.2], lobbyFloor, "Fire lift from brochure page 2.", 0.78);
+  addLowRoom(root, features, "common-toilet", "Toilet 1.20 x 1.80", "Common", [1.2, 1.8], [4.0, -2.2], bathFloor, "Common toilet beside the fire lift.", 0.78);
 
-  // FLAT 103 - brochure: Living 5.366x3.000, Kitchen 3.640x2.061,
-  // Bedrooms 3.313x3.146 and 3.130x3.830, toilet 1.900x1.313.
-  addLowRoom(root, features, "103-living", "Living 5.366 x 3.000", "103-403", [5.37, 3.0], [-0.5, -5.0], cream, "Brochure-backed Flat 103-403 living room.");
-  addLowRoom(root, features, "103-kitchen", "Kitchen 3.640 x 2.061", "103-403", [3.64, 2.06], [-2.3, -7.72], kitchenFloor, "Brochure-backed modular kitchen.");
-  addLowRoom(root, features, "103-bed-a", "Bed Room 3.313 x 3.146", "103-403", [3.31, 3.15], [3.55, -4.8], cream, "Brochure-backed bedroom.");
-  addLowRoom(root, features, "103-bed-b", "Bed Room 3.130 x 3.830", "103-403", [3.13, 3.83], [3.45, -8.25], cream, "Brochure-backed bedroom.");
-  addLowRoom(root, features, "103-toilet", "Toilet 1.900 x 1.313", "103-403", [1.9, 1.31], [0.55, -7.62], bath, "Brochure-backed toilet.");
-  addBalcony(root, features, "103-balcony-side", "Balcony 1.460", "103-403", [1.46, 2.9], [-4.65, -5.0]);
-  addBalcony(root, features, "103-wbal", "W. Bal 1.350", "103-403", [3.0, 1.35], [-2.25, -9.2]);
-  addBalcony(root, features, "103-balcony", "Balcony 1.350", "103-403", [1.35, 1.35], [0.55, -9.2]);
+  // FLAT 103 TO 403 — lower wing.
+  addLowRoom(root, features, "103-living", "Living 5.366 x 3.000", "103-403", [5.37, 3.0], [-0.55, -5.1], livingFloor, "Flat 103–403 living room from brochure page 2.", 0.72);
+  addLowRoom(root, features, "103-bed-a", "Bed Room 3.313 x 3.146", "103-403", [3.31, 3.15], [3.7, -5.2], livingFloor, "Flat 103–403 upper bedroom.", 0.72);
+  addLowRoom(root, features, "103-kitchen", "Kitchen 3.640 x 2.061", "103-403", [3.64, 2.06], [-2.55, -8.1], kitchenFloor, "Flat 103–403 kitchen.", 0.72);
+  addLowRoom(root, features, "103-toilet", "Toilet 1.900 x 1.313", "103-403", [1.9, 1.31], [0.6, -8.05], bathFloor, "Flat 103–403 toilet.", 0.72);
+  addLowRoom(root, features, "103-bed-b", "Bed Room 3.130 x 3.830", "103-403", [3.13, 3.83], [3.7, -8.55], livingFloor, "Flat 103–403 lower bedroom.", 0.72);
+  addBalcony(root, features, "103-balcony-side", "Balcony 1.460", "103-403", [1.46, 3.0], [-4.75, -5.15], "left");
+  addBalcony(root, features, "103-wbal", "W. Bal 1.350", "103-403", [3.0, 1.35], [-2.55, -9.75], "bottom");
+  addBalcony(root, features, "103-balcony", "Balcony 1.350", "103-403", [1.35, 1.35], [0.7, -9.75], "bottom");
 
-  addSofa(root, -0.75, -5.0, 2.5, Math.PI / 2);
-  addKitchen(root, -2.35, -7.75, 3.0, 0);
-  addBed(root, 3.55, -4.8, Math.PI / 2);
-  addBed(root, 3.45, -8.25, Math.PI / 2);
-  addToilet(root, 0.55, -7.62);
+  addLShapeSofa(root, -0.9, -5.15, Math.PI / 2);
+  addKitchen(root, -2.55, -8.1, 3.0, 0);
+  addBed(root, 3.7, -5.2, Math.PI / 2);
+  addWardrobe(root, 4.75, -4.0, 1.45, Math.PI / 2);
+  addBed(root, 3.7, -8.55, Math.PI / 2);
+  addWardrobe(root, 4.8, -7.2, 1.6, Math.PI / 2);
+  addToilet(root, 0.6, -8.05, 0);
 
-  // Visual central axis / floor foundation.
-  const overall = box([14.4, 0.05, 20.0], standard(0xcfc9be, 0.92), [0, -0.025, -0.6]);
+  // A subtle floor plate only under the actual brochure composition.
+  const overall = box([14.5, 0.045, 20.4], standard(0xcfc7bb, 0.94), [0, -0.03, -0.55]);
   overall.renderOrder = -1;
   root.add(overall);
 
