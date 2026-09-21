@@ -7,6 +7,7 @@ import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.j
 import type { CameraPreset3D } from "@rekixo/3d-contracts";
 import { createFloorExploder, enhanceArchitecturalModel } from "./realism";
 import { clampWalkPosition, walkDelta, walkStartPosition, type WalkDirection } from "./walkthrough";
+import { createArchitecturalSiteEnvironment } from "./siteEnvironment";
 
 type ViewerMode = "booting" | "loading" | "model" | "demo" | "error";
 type PresentationView = "default" | "aerial" | "building" | "top" | "balcony" | "context";
@@ -197,6 +198,7 @@ export function Viewer3D({
   const explodeRef = useRef<((enabled: boolean) => void) | null>(null);
   const walkModeRef = useRef<((enabled: boolean, floor: number | null) => void) | null>(null);
   const walkStepRef = useRef<((direction: WalkDirection) => void) | null>(null);
+  const presentationRef = useRef<((view: PresentationView, instant?: boolean) => void) | null>(null);
   const [mode, setMode] = useState<ViewerMode>("booting");
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -217,6 +219,8 @@ export function Viewer3D({
     let activeObject: THREE.Object3D | undefined;
     let homeView: HomeView | undefined;
     let floorExploder: ReturnType<typeof createFloorExploder> | undefined;
+    let siteEnvironment: ReturnType<typeof createArchitecturalSiteEnvironment> | undefined;
+    let cameraTween: { start: number; duration: number; fromPosition: THREE.Vector3; toPosition: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3; fromFov: number; toFov: number } | undefined;
     let walkActive = false;
     let walkYaw = 0;
     let walkPitch = 0;
@@ -365,6 +369,7 @@ export function Viewer3D({
       fill.intensity = night ? 0.55 : 1.1;
       warmFill.intensity = night ? 16 : 0;
       renderer.toneMappingExposure = night ? 1.18 : 1.05;
+      siteEnvironment?.setNight(night);
     };
 
     const enterWalkMode = (enabled: boolean, floor: number | null) => {
@@ -469,51 +474,67 @@ export function Viewer3D({
       const sizeForView = bounds.getSize(new THREE.Vector3());
       const centerForView = sphere.center.clone();
       const radiusForView = Math.max(sphere.radius, 1);
-      const setView = (view: PresentationView) => {
+
+      siteEnvironment?.dispose();
+      if (siteEnvironment) scene.remove(siteEnvironment.root);
+      siteEnvironment = createArchitecturalSiteEnvironment(bounds, renderer, mobile);
+      scene.add(siteEnvironment.root);
+
+      const viewTarget = (view: PresentationView) => {
+        if (view === "aerial") return {
+          position: new THREE.Vector3(centerForView.x + radiusForView * 1.65, centerForView.y + radiusForView * 1.45, centerForView.z + radiusForView * 1.65),
+          target: centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)),
+          fov: 36,
+        };
+        if (view === "top") return {
+          position: new THREE.Vector3(centerForView.x, bounds.max.y + radiusForView * 1.55, centerForView.z + radiusForView * 0.06),
+          target: centerForView.clone(),
+          fov: 34,
+        };
+        if (view === "balcony") return {
+          position: new THREE.Vector3(bounds.max.x + radiusForView * 0.45, bounds.min.y + sizeForView.y * 0.62, bounds.max.z + radiusForView * 0.28),
+          target: new THREE.Vector3(centerForView.x, bounds.min.y + sizeForView.y * 0.52, centerForView.z),
+          fov: 38,
+        };
+        if (view === "context") return {
+          position: new THREE.Vector3(centerForView.x + radiusForView * 2.25, centerForView.y + radiusForView * 1.2, centerForView.z + radiusForView * 2.25),
+          target: centerForView.clone(),
+          fov: 42,
+        };
+        if (view === "building") return {
+          position: new THREE.Vector3(centerForView.x + radiusForView * 1.15, centerForView.y + radiusForView * 0.58, centerForView.z + radiusForView * 1.15),
+          target: centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)),
+          fov: 39,
+        };
+        return homeView ? { position: homeView.position.clone(), target: homeView.target.clone(), fov: homeView.fov } : undefined;
+      };
+
+      const setView = (view: PresentationView, instant = false) => {
+        const targetView = viewTarget(view);
+        if (!targetView) return;
         controls.enabled = true;
-        if (view === "aerial") {
-          camera.position.set(
-            centerForView.x + radiusForView * 1.65,
-            centerForView.y + radiusForView * 1.45,
-            centerForView.z + radiusForView * 1.65,
-          );
-          controls.target.copy(centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)));
-          camera.fov = 36;
-        } else if (view === "top") {
-          camera.position.set(centerForView.x, bounds.max.y + radiusForView * 1.55, centerForView.z + radiusForView * 0.06);
-          controls.target.copy(centerForView);
-          camera.fov = 34;
-        } else if (view === "balcony") {
-          camera.position.set(
-            bounds.max.x + radiusForView * 0.45,
-            bounds.min.y + sizeForView.y * 0.62,
-            bounds.max.z + radiusForView * 0.28,
-          );
-          controls.target.set(centerForView.x, bounds.min.y + sizeForView.y * 0.52, centerForView.z);
-          camera.fov = 38;
-        } else if (view === "context") {
-          camera.position.set(
-            centerForView.x + radiusForView * 2.25,
-            centerForView.y + radiusForView * 1.2,
-            centerForView.z + radiusForView * 2.25,
-          );
-          controls.target.copy(centerForView);
-          camera.fov = 42;
-        } else if (view === "building") {
-          camera.position.set(
-            centerForView.x + radiusForView * 1.15,
-            centerForView.y + radiusForView * 0.58,
-            centerForView.z + radiusForView * 1.15,
-          );
-          controls.target.copy(centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)));
-          camera.fov = 39;
-        } else {
+        if (instant) {
+          camera.position.copy(targetView.position);
+          controls.target.copy(targetView.target);
+          camera.fov = targetView.fov;
+          camera.updateProjectionMatrix();
+          controls.update();
+          cameraTween = undefined;
           return;
         }
-        camera.updateProjectionMatrix();
-        controls.update();
+        cameraTween = {
+          start: performance.now(),
+          duration: 900,
+          fromPosition: camera.position.clone(),
+          toPosition: targetView.position,
+          fromTarget: controls.target.clone(),
+          toTarget: targetView.target,
+          fromFov: camera.fov,
+          toFov: targetView.fov,
+        };
       };
-      setView(presentationView);
+      presentationRef.current = setView;
+      setView(presentationView, true);
 
       if (initialExploded) {
         floorExploder?.setExploded(true);
@@ -589,6 +610,19 @@ export function Viewer3D({
       if (document.hidden) return;
 
       const delta = Math.min(clock.getDelta(), 0.05);
+
+      if (cameraTween && !walkActive) {
+        const elapsed = performance.now() - cameraTween.start;
+        const raw = THREE.MathUtils.clamp(elapsed / cameraTween.duration, 0, 1);
+        const eased = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
+        camera.position.lerpVectors(cameraTween.fromPosition, cameraTween.toPosition, eased);
+        controls.target.lerpVectors(cameraTween.fromTarget, cameraTween.toTarget, eased);
+        camera.fov = THREE.MathUtils.lerp(cameraTween.fromFov, cameraTween.toFov, eased);
+        camera.updateProjectionMatrix();
+        controls.update();
+        if (raw >= 1) cameraTween = undefined;
+      }
+
       if (walkActive && modelBounds) {
         const speed = 2.35 * delta;
         if (walkKeys.has("w") || walkKeys.has("arrowup")) camera.position.add(walkDelta(walkYaw, "forward", speed));
@@ -625,6 +659,10 @@ export function Viewer3D({
       renderer.domElement.removeEventListener("pointerup", handlePointerUp);
       renderer.domElement.removeEventListener("pointercancel", handlePointerUp);
       if (activeObject) disposeObject(activeObject);
+      if (siteEnvironment) {
+        scene.remove(siteEnvironment.root);
+        siteEnvironment.dispose();
+      }
       ground.geometry.dispose();
       groundMaterial.dispose();
       environmentTexture.dispose();
@@ -639,8 +677,23 @@ export function Viewer3D({
       explodeRef.current = null;
       walkModeRef.current = null;
       walkStepRef.current = null;
+      presentationRef.current = null;
     };
-  }, [modelUrl, cameraPreset, interactionMode, initialWalk, initialWalkFloor, presentationView, initialFloor, initialExploded]);
+  }, [modelUrl, cameraPreset, interactionMode, initialWalk, initialWalkFloor]);
+
+  useEffect(() => {
+    presentationRef.current?.(presentationView);
+  }, [presentationView]);
+
+  useEffect(() => {
+    setSelectedFloor(initialFloor);
+    floorRef.current?.(initialFloor);
+  }, [initialFloor]);
+
+  useEffect(() => {
+    setExploded(initialExploded);
+    explodeRef.current?.(initialExploded);
+  }, [initialExploded]);
 
   useEffect(() => {
     const update = () => {
