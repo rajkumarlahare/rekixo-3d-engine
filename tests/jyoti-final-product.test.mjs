@@ -6,7 +6,7 @@ const read = (file) => fs.readFileSync(file, "utf8");
 
 test("final Jyoti product exposes only source-backed public modules", () => {
   const migration = read("database/migrations/0004_jyoti_final_product_modules.sql");
-  assert.match(migration, /scene_jyoti_site_map_v1/);
+  assert.match(migration, /scene_jyoti_wing_distance_pending/);
   assert.match(migration, /Interactive Section Cut/);
   assert.match(migration, /Facade & Balcony Detail/);
   assert.match(migration, /No interior balcony panorama is claimed/);
@@ -18,7 +18,7 @@ test("public UI contains location map and floor explorer without inventing unit 
   assert.match(app, /LocationMap/);
   assert.match(app, /unitNumberForFloor/);
   assert.match(app, /No brochure-listed unit for this floor/);
-  assert.match(app, /site-map/);
+  assert.match(app, /wing-distance/);
 });
 
 test("viewer supports floor isolation, section cut and day-night modes", () => {
