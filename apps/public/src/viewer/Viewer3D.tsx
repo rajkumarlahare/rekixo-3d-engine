@@ -8,6 +8,7 @@ import type { CameraPreset3D } from "@rekixo/3d-contracts";
 import { createFloorExploder, enhanceArchitecturalModel } from "./realism";
 import { clampWalkPosition, walkDelta, walkStartPosition, type WalkDirection } from "./walkthrough";
 import { createArchitecturalSiteEnvironment } from "./siteEnvironment";
+import { createProjectExperience, type ExperienceMode, type ExperienceFeature } from "./projectExperience";
 
 type ViewerMode = "booting" | "loading" | "model" | "demo" | "error";
 type PresentationView = "default" | "aerial" | "building" | "top" | "balcony" | "context";
@@ -23,6 +24,8 @@ interface Viewer3DProps {
   initialFloor?: number | null;
   initialExploded?: boolean;
   compactUi?: boolean;
+  experienceMode?: ExperienceMode;
+  onFeatureSelect?: (feature: Omit<ExperienceFeature, "object">) => void;
 }
 
 interface HomeView {
@@ -189,6 +192,8 @@ export function Viewer3D({
   initialFloor = null,
   initialExploded = false,
   compactUi = false,
+  experienceMode = "site",
+  onFeatureSelect,
 }: Viewer3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const resetRef = useRef<(() => void) | null>(null);
@@ -199,6 +204,8 @@ export function Viewer3D({
   const walkModeRef = useRef<((enabled: boolean, floor: number | null) => void) | null>(null);
   const walkStepRef = useRef<((direction: WalkDirection) => void) | null>(null);
   const presentationRef = useRef<((view: PresentationView, instant?: boolean) => void) | null>(null);
+  const experienceRef = useRef<((mode: ExperienceMode, instant?: boolean) => void) | null>(null);
+  const featureCallbackRef = useRef(onFeatureSelect);
   const [mode, setMode] = useState<ViewerMode>("booting");
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -208,6 +215,10 @@ export function Viewer3D({
   const [nightMode, setNightMode] = useState(false);
   const [exploded, setExploded] = useState(initialExploded);
   const [walkMode, setWalkMode] = useState(false);
+
+  useEffect(() => {
+    featureCallbackRef.current = onFeatureSelect;
+  }, [onFeatureSelect]);
 
   useEffect(() => {
     const candidate = hostRef.current;
@@ -220,6 +231,7 @@ export function Viewer3D({
     let homeView: HomeView | undefined;
     let floorExploder: ReturnType<typeof createFloorExploder> | undefined;
     let siteEnvironment: ReturnType<typeof createArchitecturalSiteEnvironment> | undefined;
+    let projectExperience: ReturnType<typeof createProjectExperience> | undefined;
     let cameraTween: { start: number; duration: number; fromPosition: THREE.Vector3; toPosition: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3; fromFov: number; toFov: number } | undefined;
     let walkActive = false;
     let walkYaw = 0;
@@ -370,6 +382,7 @@ export function Viewer3D({
       warmFill.intensity = night ? 16 : 0;
       renderer.toneMappingExposure = night ? 1.18 : 1.05;
       siteEnvironment?.setNight(night);
+      projectExperience?.setNight(night);
     };
 
     const enterWalkMode = (enabled: boolean, floor: number | null) => {
@@ -442,6 +455,39 @@ export function Viewer3D({
     renderer.domElement.addEventListener("pointerup", handlePointerUp);
     renderer.domElement.addEventListener("pointercancel", handlePointerUp);
 
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const handleFeatureClick = (event: MouseEvent) => {
+      if (walkActive || !projectExperience) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / Math.max(rect.height, 1)) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObject(projectExperience.root, true);
+      for (const hit of hits) {
+        let current: THREE.Object3D | null = hit.object;
+        while (current) {
+          const id = current.userData.experienceFeatureId as string | undefined;
+          if (id) {
+            const found = projectExperience.features.find((item) => item.id === id);
+            if (found) {
+              featureCallbackRef.current?.({
+                id: found.id,
+                label: found.label,
+                category: found.category,
+                description: found.description,
+              });
+              renderer.domElement.classList.add("viewer-canvas--feature-selected");
+              window.setTimeout(() => renderer.domElement.classList.remove("viewer-canvas--feature-selected"), 220);
+              return;
+            }
+          }
+          current = current.parent;
+        }
+      }
+    };
+    renderer.domElement.addEventListener("click", handleFeatureClick);
+
     floorRef.current = applyFloor;
     sectionRef.current = applySection;
     lightingRef.current = applyLighting;
@@ -479,6 +525,11 @@ export function Viewer3D({
       if (siteEnvironment) scene.remove(siteEnvironment.root);
       siteEnvironment = createArchitecturalSiteEnvironment(bounds, renderer, mobile);
       scene.add(siteEnvironment.root);
+
+      projectExperience?.dispose();
+      if (projectExperience) scene.remove(projectExperience.root);
+      projectExperience = createProjectExperience(bounds, mobile);
+      scene.add(projectExperience.root);
 
       const viewTarget = (view: PresentationView) => {
         if (view === "aerial") return {
@@ -534,6 +585,53 @@ export function Viewer3D({
         };
       };
       presentationRef.current = setView;
+
+      const setExperience = (nextMode: ExperienceMode, instant = false) => {
+        if (!projectExperience || !activeObject || !siteEnvironment) return;
+        projectExperience.setMode(nextMode);
+
+        const interior = nextMode === "interior";
+        activeObject.visible = !interior;
+        siteEnvironment.root.visible = !interior;
+
+        if (nextMode === "site") {
+          setView(presentationView, instant);
+          return;
+        }
+
+        const focus = projectExperience.focus(nextMode);
+        const sphere = focus.box.getBoundingSphere(new THREE.Sphere());
+        const radius = Math.max(sphere.radius, 1);
+        const target = focus.target.clone();
+        const position =
+          nextMode === "interior"
+            ? target.clone().add(new THREE.Vector3(radius * 1.25, radius * 0.9, radius * 1.45))
+            : target.clone().add(new THREE.Vector3(radius * 1.1, radius * 1.0, radius * 1.25));
+        const toFov = nextMode === "interior" ? 46 : 40;
+
+        if (instant) {
+          camera.position.copy(position);
+          controls.target.copy(target);
+          camera.fov = toFov;
+          camera.updateProjectionMatrix();
+          controls.update();
+          cameraTween = undefined;
+          return;
+        }
+
+        cameraTween = {
+          start: performance.now(),
+          duration: 800,
+          fromPosition: camera.position.clone(),
+          toPosition: position,
+          fromTarget: controls.target.clone(),
+          toTarget: target,
+          fromFov: camera.fov,
+          toFov,
+        };
+      };
+      experienceRef.current = setExperience;
+      setExperience(experienceMode, true);
       setView(presentationView, true);
 
       if (initialExploded) {
@@ -658,10 +756,15 @@ export function Viewer3D({
       renderer.domElement.removeEventListener("pointermove", handlePointerMove);
       renderer.domElement.removeEventListener("pointerup", handlePointerUp);
       renderer.domElement.removeEventListener("pointercancel", handlePointerUp);
+      renderer.domElement.removeEventListener("click", handleFeatureClick);
       if (activeObject) disposeObject(activeObject);
       if (siteEnvironment) {
         scene.remove(siteEnvironment.root);
         siteEnvironment.dispose();
+      }
+      if (projectExperience) {
+        scene.remove(projectExperience.root);
+        projectExperience.dispose();
       }
       ground.geometry.dispose();
       groundMaterial.dispose();
@@ -678,12 +781,17 @@ export function Viewer3D({
       walkModeRef.current = null;
       walkStepRef.current = null;
       presentationRef.current = null;
+      experienceRef.current = null;
     };
   }, [modelUrl, cameraPreset, interactionMode, initialWalk, initialWalkFloor]);
 
   useEffect(() => {
     presentationRef.current?.(presentationView);
   }, [presentationView]);
+
+  useEffect(() => {
+    experienceRef.current?.(experienceMode);
+  }, [experienceMode]);
 
   useEffect(() => {
     setSelectedFloor(initialFloor);
