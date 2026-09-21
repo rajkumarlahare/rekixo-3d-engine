@@ -420,7 +420,7 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
           experienceMode={experienceMode}
           initialWalk={mode === "walk"}
           initialWalkFloor={floor ?? 1}
-          visualPreset="jyoti-reference"
+          visualPreset="reference-render"
           onFeatureSelect={setSelectedFeature}
           compactUi
         />
