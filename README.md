@@ -96,3 +96,34 @@ Merges to `main` deploy through GitHub Actions. The workflow verifies the genera
 - Never create a code repository per normal 3D customer project.
 - Never add host-wide route takeovers.
 - Do not expose privileged 3D HTTP write APIs before authenticated Stage 5 handoff exists.
+
+
+## Jyoti Paradise — completed public product
+
+Live project:
+
+`https://ar3dstudio.in/3Dprojects/jyoti-paradise`
+
+The Jyoti Paradise production experience now includes:
+
+- live exterior 3D model
+- orbit / zoom / reset / fullscreen
+- day/night lighting toggle
+- floor isolation for Ground + Floors 1–5
+- interactive section cut
+- facade / balcony detail mode
+- brochure-backed floor explorer
+- brochure-backed location/connectivity overview
+- amenities and nearby locations
+- mobile responsive layout
+- fail-safe preview geometry if the production model cannot load
+
+Source discipline remains strict:
+
+- DWG/SKB/FBX source files stay outside Git
+- brochure facts are not silently expanded
+- the site-map diagram is a connectivity overview, not a surveyed cadastral map
+- section view is interactive model clipping, not a structural section drawing
+- unit numbering is shown only where the supplied brochure series supports it
+
+See [docs/JYOTI-PARADISE.md](./docs/JYOTI-PARADISE.md) and [docs/JYOTI-PARADISE-PHASE-1-GEOMETRY-LOCK.md](./docs/JYOTI-PARADISE-PHASE-1-GEOMETRY-LOCK.md).
