@@ -4,50 +4,37 @@ import test from "node:test";
 
 const read = (file) => fs.readFileSync(file, "utf8");
 
-test("V8 reference palette is isolated from generic engine projects", () => {
+test("V8 history remains additive and reference calibration stays isolated", () => {
+  const migration = read("database/migrations/0015_jyoti_visual_match_v8.sql");
   const realism = read("apps/public/src/viewer/realism.ts");
+  assert.match(migration, /visual-match-v8/);
+  assert.match(migration, /zoomed visual comparison/i);
   assert.match(realism, /referenceVisual = false/);
-  assert.match(realism, /referenceVisual\s*\?\s*referenceFacadeTint\[normalized\]/);
-  assert.match(realism, /: sourceMaterialTint\[normalized\]/);
-  assert.match(realism, /frontcolor: 0xffffff/);
-  assert.match(realism, /frontcolor: 0xe3ddd5/);
+  assert.match(realism, /referenceFacadeTint/);
+  assert.match(realism, /sourceMaterialTint/);
 });
 
-test("V8 adds the facade structures visible in the exterior reference", () => {
+test("V9 supersedes the V8 detached facade cage with source-model rendering", () => {
   const source = read("apps/public/src/viewer/projectExperience.ts");
-  assert.match(source, /addReferenceFacadeAccents/);
-  assert.match(source, /charcoal/);
-  assert.match(source, /timber/);
-  assert.match(source, /mint/);
-  assert.match(source, /railGlass/);
-  assert.match(source, /Vertical privacy fins/);
-  assert.match(source, /Warm concealed strip/);
-  assert.match(source, /Roof crown/);
-});
-
-test("V8 restores reference landscaping and brick context on mobile", () => {
-  const source = read("apps/public/src/viewer/projectExperience.ts");
-  assert.match(source, /mobile\s*\?\s*\[/);
+  assert.doesNotMatch(source, /addReferenceFacadeAccents/);
+  assert.doesNotMatch(source, /Vertical privacy fins/);
+  assert.doesNotMatch(source, /Right-side return cladding/);
+  assert.match(source, /addFacadeWarmLights/);
   assert.match(source, /addBrickFacing/);
-  assert.match(source, /referenceVisual \? 0xa69c92/);
-  assert.match(source, /referenceVisual \? 0x716c67/);
 });
 
-test("V8 mobile camera is closer and reference mode keeps quality shadows", () => {
+test("reference site remains compact instead of dominating the building", () => {
+  const source = read("apps/public/src/viewer/projectExperience.ts");
+  assert.match(source, /referenceVisual \? 1\.28 : 1\.68/);
+  assert.match(source, /referenceVisual \? 1\.16 : 1\.48/);
+  assert.match(source, /referenceVisual \? 1\.72 : 2\.35/);
+  assert.match(source, /referenceVisual \? 0\.30 : 0\.42/);
+  assert.match(source, /const treeLayout[\s\S]*referenceVisual[\s\S]*\? \[\]/);
+});
+
+test("reference mode keeps mobile quality without invented facade geometry", () => {
   const viewer = read("apps/public/src/viewer/Viewer3D.tsx");
   assert.match(viewer, /antialias: referenceVisual \|\| !mobile/);
   assert.match(viewer, /renderer\.shadowMap\.enabled = referenceVisual \|\| !mobile/);
-  assert.match(viewer, /mobile \? 0\.92 : 1\.08/);
-  assert.match(viewer, /mobile \? 1\.08 : 1\.28/);
-  assert.match(viewer, /fov: mobile \? 29 : 31/);
   assert.match(viewer, /createProjectExperience\(bounds, mobile, referenceVisual\)/);
-});
-
-test("V8 migration records the zoomed visual match pass", () => {
-  const migration = read("database/migrations/0015_jyoti_visual_match_v8.sql");
-  assert.match(migration, /visual-match-v8/);
-  assert.match(migration, /zoomed visual comparison/i);
-  assert.match(migration, /glass-balcony-rails/);
-  assert.match(migration, /trees-on-mobile/);
-  assert.match(migration, /No Platform\/customer website resources are modified/);
 });
