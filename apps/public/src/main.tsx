@@ -356,7 +356,7 @@ function PendingModule({ type, experience }: { type: Scene3DType; experience: Pu
   );
 }
 
-type TwinMode = "project" | "building" | "floors" | "units" | "interior" | "terrace" | "amenities" | "balcony" | "context";
+type TwinMode = "project" | "building" | "floors" | "units" | "interior" | "walk" | "terrace" | "amenities" | "balcony" | "context";
 
 const twinModes: Array<{ id: TwinMode; label: string; short: string }> = [
   { id: "project", label: "Project Navigation", short: "Project" },
@@ -364,6 +364,7 @@ const twinModes: Array<{ id: TwinMode; label: string; short: string }> = [
   { id: "floors", label: "Floor Explorer", short: "Floors" },
   { id: "units", label: "Unit Explorer", short: "Units" },
   { id: "interior", label: "Typical Floor Interior", short: "Interior" },
+  { id: "walk", label: "Room Walkthrough", short: "Walk" },
   { id: "terrace", label: "Roof Inspection", short: "Roof" },
   { id: "amenities", label: "Amenities", short: "Amenities" },
   { id: "balcony", label: "Balcony View", short: "Balcony" },
@@ -396,7 +397,11 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
           : "top";
 
   const experienceMode =
-    mode === "interior" ? "interior" : mode === "terrace" ? "terrace" : "site";
+    mode === "interior" || mode === "walk"
+      ? "interior"
+      : mode === "terrace"
+        ? "terrace"
+        : "site";
 
   const viewerFloor = mode === "units" ? floor ?? 1 : mode === "floors" ? floor : null;
   const exploded = mode === "floors" && floor === null;
@@ -413,6 +418,9 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
           initialFloor={viewerFloor}
           initialExploded={exploded}
           experienceMode={experienceMode}
+          initialWalk={mode === "walk"}
+          initialWalkFloor={floor ?? 1}
+          visualPreset="jyoti-reference"
           onFeatureSelect={setSelectedFeature}
           compactUi
         />
@@ -462,6 +470,7 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
             {mode === "floors" && "Separate the building stack or focus a single verified floor."}
             {mode === "units" && "Select brochure-backed units on a floor without inventing geometry."}
             {mode === "interior" && "Explore the brochure-backed typical floor: Flats 101/102/103, lobby, stair, fire lift, rooms, kitchens, toilets and balconies. Click rooms for brochure dimensions and source-backed placement. Where brochure/DWG values conflict, the conflict is recorded instead of silently forcing one value."}
+            {mode === "walk" && "Enter the brochure-backed typical floor at eye level. Drag or touch to look around, then move through the living rooms, bedrooms, kitchens, toilets, balconies and common areas using keyboard or on-screen controls."}
             {mode === "terrace" && "Inspect the actual roof massing and edge lighting. No recreational roof amenity is claimed because it is not present in the supplied brochure."}
             {mode === "amenities" && "Review only the brochure-listed amenities: Car Parking, Modular Kitchen, POP in Hall and CCTV Camera."}
             {mode === "balcony" && "Inspect the facade and balcony side from a dedicated viewing angle."}
@@ -517,6 +526,22 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
               <button type="button" onClick={() => setSelectedFeature({ id: "103", label: "Flat 103 to 403", category: "2BHK", description: "940 sq.ft. brochure-backed unit series." })}>
                 <span>Flat 103 to 403</span><strong>2BHK</strong><b>940 sq.ft.</b>
               </button>
+            </div>
+          </aside>
+        )}
+
+        {mode === "walk" && (
+          <aside className="twin-info-panel twin-info-panel--right twin-walk-panel">
+            <span className="twin-kicker">ROOM WALKTHROUGH</span>
+            <h2>Touch + Desktop Navigation</h2>
+            <p>
+              Drag on the 3D view to look around. On desktop use WASD or arrow keys; on phone/tablet
+              use the on-screen arrows. Movement is intentionally free inside the verified typical-floor
+              envelope so unverified door/collision boundaries are not invented.
+            </p>
+            <div className="twin-chip-list">
+              <span>Living</span><span>Bedrooms</span><span>Kitchen</span><span>Toilets</span>
+              <span>Balconies</span><span>Lobby</span><span>Stair</span><span>Fire Lift</span>
             </div>
           </aside>
         )}
@@ -621,7 +646,7 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
           </div>
           <div>
             <span>CONTROL</span>
-            <strong>Drag · Zoom · Pan</strong>
+            <strong>{mode === "walk" ? "Drag / Touch · WASD / Arrows" : "Drag · Zoom · Pan"}</strong>
           </div>
         </div>
       </section>
