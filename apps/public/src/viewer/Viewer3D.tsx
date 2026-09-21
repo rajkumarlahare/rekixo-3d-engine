@@ -25,6 +25,7 @@ interface Viewer3DProps {
   initialExploded?: boolean;
   compactUi?: boolean;
   experienceMode?: ExperienceMode;
+  visualPreset?: "default" | "jyoti-reference";
   onFeatureSelect?: (feature: Omit<ExperienceFeature, "object">) => void;
 }
 
@@ -193,6 +194,7 @@ export function Viewer3D({
   initialExploded = false,
   compactUi = false,
   experienceMode = "site",
+  visualPreset = "default",
   onFeatureSelect,
 }: Viewer3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -234,6 +236,7 @@ export function Viewer3D({
     let projectExperience: ReturnType<typeof createProjectExperience> | undefined;
     let cameraTween: { start: number; duration: number; fromPosition: THREE.Vector3; toPosition: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3; fromFov: number; toFov: number } | undefined;
     let walkActive = false;
+    let activeWalkBounds: THREE.Box3 | undefined;
     let walkYaw = 0;
     let walkPitch = 0;
     let dragPointerId: number | undefined;
@@ -242,9 +245,10 @@ export function Viewer3D({
     const walkKeys = new Set<string>();
 
     const mobile = isMobileDevice();
+    const referenceVisual = visualPreset === "jyoti-reference";
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x8faec8);
-    scene.fog = new THREE.FogExp2(0xa9bfd0, 0.0015);
+    scene.background = new THREE.Color(referenceVisual ? 0x8195aa : 0x8faec8);
+    scene.fog = new THREE.FogExp2(referenceVisual ? 0x93a4b3 : 0xa9bfd0, referenceVisual ? 0.00125 : 0.0015);
     let modelBounds: THREE.Box3 | undefined;
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 2000);
@@ -257,7 +261,7 @@ export function Viewer3D({
     });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.9;
+    renderer.toneMappingExposure = referenceVisual ? 1.03 : 0.9;
     renderer.shadowMap.enabled = !mobile;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.35 : 2));
@@ -281,10 +285,14 @@ export function Viewer3D({
       camera.quaternion.setFromEuler(euler);
     };
 
-    const hemi = new THREE.HemisphereLight(0xdcecff, 0x514b45, 1.45);
+    const hemi = new THREE.HemisphereLight(
+      referenceVisual ? 0xd6e4ef : 0xdcecff,
+      referenceVisual ? 0x5b5148 : 0x514b45,
+      referenceVisual ? 1.22 : 1.45,
+    );
     scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xffe4c2, 2.25);
+    const sun = new THREE.DirectionalLight(referenceVisual ? 0xffd3a6 : 0xffe4c2, referenceVisual ? 2.05 : 2.25);
     sun.position.set(10, 18, 12);
     sun.castShadow = renderer.shadowMap.enabled;
     sun.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
@@ -294,18 +302,18 @@ export function Viewer3D({
     sun.shadow.normalBias = 0.018;
     scene.add(sun);
 
-    const fill = new THREE.DirectionalLight(0x99bfe0, 0.55);
+    const fill = new THREE.DirectionalLight(0x99bfe0, referenceVisual ? 0.38 : 0.55);
     fill.position.set(-10, 8, -7);
     scene.add(fill);
 
-    const warmFill = new THREE.PointLight(0xffa35c, 0, 120, 1.5);
+    const warmFill = new THREE.PointLight(0xffa35c, referenceVisual ? 1.25 : 0, 120, 1.5);
     warmFill.position.set(0, 18, 18);
     scene.add(warmFill);
 
     const pmrem = new THREE.PMREMGenerator(renderer);
     const environmentTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = environmentTexture;
-    scene.environmentIntensity = 0.65;
+    scene.environmentIntensity = referenceVisual ? 0.58 : 0.65;
 
     const updateSize = () => {
       const width = Math.max(hostElement.clientWidth, 1);
@@ -364,14 +372,19 @@ export function Viewer3D({
     };
 
     const applyLighting = (night: boolean) => {
-      scene.background = new THREE.Color(night ? 0x101827 : 0x8faec8);
-      scene.fog = new THREE.FogExp2(night ? 0x182130 : 0xa9bfd0, night ? 0.0025 : 0.0015);
-      hemi.intensity = night ? 0.72 : 1.45;
-      sun.intensity = night ? 0.38 : 2.25;
-      fill.intensity = night ? 0.3 : 0.55;
-      warmFill.intensity = night ? 7 : 0;
-      renderer.toneMappingExposure = night ? 0.82 : 0.9;
-      scene.environmentIntensity = night ? 0.42 : 0.65;
+      scene.background = new THREE.Color(
+        night ? 0x101827 : referenceVisual ? 0x8195aa : 0x8faec8,
+      );
+      scene.fog = new THREE.FogExp2(
+        night ? 0x182130 : referenceVisual ? 0x93a4b3 : 0xa9bfd0,
+        night ? 0.0025 : referenceVisual ? 0.00125 : 0.0015,
+      );
+      hemi.intensity = night ? 0.72 : referenceVisual ? 1.22 : 1.45;
+      sun.intensity = night ? 0.38 : referenceVisual ? 2.05 : 2.25;
+      fill.intensity = night ? 0.3 : referenceVisual ? 0.38 : 0.55;
+      warmFill.intensity = night ? 7 : referenceVisual ? 1.25 : 0;
+      renderer.toneMappingExposure = night ? 0.82 : referenceVisual ? 1.03 : 0.9;
+      scene.environmentIntensity = night ? 0.42 : referenceVisual ? 0.58 : 0.65;
       siteEnvironment?.setNight(night);
       projectExperience?.setNight(night);
     };
@@ -381,6 +394,7 @@ export function Viewer3D({
       controls.enabled = !enabled;
 
       if (!enabled) {
+        activeWalkBounds = undefined;
         walkKeys.clear();
         resetCamera();
         return;
@@ -389,9 +403,27 @@ export function Viewer3D({
       if (!modelBounds) return;
       floorExploder?.reset();
       renderer.clippingPlanes = [];
-      camera.position.copy(walkStartPosition(modelBounds, floor));
 
-      const center = modelBounds.getCenter(new THREE.Vector3());
+      const interiorWalk = experienceMode === "interior" && projectExperience;
+      activeWalkBounds = interiorWalk
+        ? projectExperience.focus("interior").box.clone()
+        : modelBounds.clone();
+
+      if (interiorWalk) {
+        const center = activeWalkBounds.getCenter(new THREE.Vector3());
+        const size = activeWalkBounds.getSize(new THREE.Vector3());
+        camera.position.set(
+          center.x,
+          activeWalkBounds.min.y + Math.min(1.55, Math.max(size.y * 0.78, 1.35)),
+          center.z + Math.max(size.z * 0.32, 1.8),
+        );
+        clampWalkPosition(camera.position, activeWalkBounds);
+      } else {
+        camera.position.copy(walkStartPosition(activeWalkBounds, floor));
+      }
+
+      const center = activeWalkBounds.getCenter(new THREE.Vector3());
+      if (interiorWalk) center.y = camera.position.y;
       const direction = center.sub(camera.position).normalize();
       walkYaw = Math.atan2(-direction.x, -direction.z);
       walkPitch = Math.asin(THREE.MathUtils.clamp(direction.y, -0.92, 0.92));
@@ -399,9 +431,9 @@ export function Viewer3D({
     };
 
     const stepWalk = (direction: WalkDirection) => {
-      if (!walkActive || !modelBounds) return;
+      if (!walkActive || !activeWalkBounds) return;
       camera.position.add(walkDelta(walkYaw, direction, 0.75));
-      clampWalkPosition(camera.position, modelBounds);
+      clampWalkPosition(camera.position, activeWalkBounds);
     };
 
     walkModeRef.current = enterWalkMode;
@@ -518,11 +550,26 @@ export function Viewer3D({
       scene.add(projectExperience.root);
 
       const viewTarget = (view: PresentationView) => {
-        if (view === "aerial") return {
-          position: new THREE.Vector3(centerForView.x + radiusForView * 1.65, centerForView.y + radiusForView * 1.45, centerForView.z + radiusForView * 1.65),
-          target: centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)),
-          fov: 36,
-        };
+        if (view === "aerial") {
+          if (referenceVisual) return {
+            position: new THREE.Vector3(
+              centerForView.x + radiusForView * 1.34,
+              bounds.min.y + sizeForView.y * 0.34,
+              centerForView.z + radiusForView * 1.62,
+            ),
+            target: new THREE.Vector3(
+              centerForView.x,
+              bounds.min.y + sizeForView.y * 0.47,
+              centerForView.z,
+            ),
+            fov: 33,
+          };
+          return {
+            position: new THREE.Vector3(centerForView.x + radiusForView * 1.65, centerForView.y + radiusForView * 1.45, centerForView.z + radiusForView * 1.65),
+            target: centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)),
+            fov: 36,
+          };
+        }
         if (view === "top") return {
           position: new THREE.Vector3(centerForView.x, bounds.max.y + radiusForView * 1.55, centerForView.z + radiusForView * 0.06),
           target: centerForView.clone(),
@@ -539,9 +586,17 @@ export function Viewer3D({
           fov: 42,
         };
         if (view === "building") return {
-          position: new THREE.Vector3(centerForView.x + radiusForView * 1.15, centerForView.y + radiusForView * 0.58, centerForView.z + radiusForView * 1.15),
-          target: centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)),
-          fov: 39,
+          position: referenceVisual
+            ? new THREE.Vector3(
+                centerForView.x + radiusForView * 1.05,
+                bounds.min.y + sizeForView.y * 0.29,
+                centerForView.z + radiusForView * 1.28,
+              )
+            : new THREE.Vector3(centerForView.x + radiusForView * 1.15, centerForView.y + radiusForView * 0.58, centerForView.z + radiusForView * 1.15),
+          target: referenceVisual
+            ? new THREE.Vector3(centerForView.x, bounds.min.y + sizeForView.y * 0.48, centerForView.z)
+            : centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)),
+          fov: referenceVisual ? 35 : 39,
         };
         return homeView ? { position: homeView.position.clone(), target: homeView.target.clone(), fov: homeView.fov } : undefined;
       };
@@ -635,8 +690,8 @@ export function Viewer3D({
         controls.update();
       }
       if (interactionMode === "section") applySection(true);
+      setWalkMode(initialWalk);
       if (initialWalk) {
-        setWalkMode(true);
         enterWalkMode(true, initialWalkFloor);
       }
     };
@@ -707,13 +762,13 @@ export function Viewer3D({
         if (raw >= 1) cameraTween = undefined;
       }
 
-      if (walkActive && modelBounds) {
+      if (walkActive && activeWalkBounds) {
         const speed = 2.35 * delta;
         if (walkKeys.has("w") || walkKeys.has("arrowup")) camera.position.add(walkDelta(walkYaw, "forward", speed));
         if (walkKeys.has("s") || walkKeys.has("arrowdown")) camera.position.add(walkDelta(walkYaw, "back", speed));
         if (walkKeys.has("a") || walkKeys.has("arrowleft")) camera.position.add(walkDelta(walkYaw, "left", speed));
         if (walkKeys.has("d") || walkKeys.has("arrowright")) camera.position.add(walkDelta(walkYaw, "right", speed));
-        clampWalkPosition(camera.position, modelBounds);
+        clampWalkPosition(camera.position, activeWalkBounds);
       } else {
         controls.update();
       }
@@ -767,7 +822,7 @@ export function Viewer3D({
       presentationRef.current = null;
       experienceRef.current = null;
     };
-  }, [modelUrl, cameraPreset, interactionMode, initialWalk, initialWalkFloor]);
+  }, [modelUrl, cameraPreset, interactionMode, initialWalk, initialWalkFloor, experienceMode, visualPreset]);
 
   useEffect(() => {
     presentationRef.current?.(presentationView);
