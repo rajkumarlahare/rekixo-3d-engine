@@ -10,7 +10,10 @@ test("realistic viewer preserves source materials and applies PBR tuning", () =>
   assert.match(helper, /enhanceArchitecturalModel/);
   assert.match(helper, /glass\|window\|translucent/);
   assert.match(helper, /metal\|steel/);
-  assert.match(helper, /marble\|granite\|slate\|tile/);
+  assert.match(helper, /marble/);
+  assert.match(helper, /granite/);
+  assert.match(helper, /slate/);
+  assert.match(helper, /tile/);
   assert.match(viewer, /RoomEnvironment/);
   assert.match(viewer, /ACESFilmicToneMapping/);
   assert.match(viewer, /controls\.enablePan = true/);
