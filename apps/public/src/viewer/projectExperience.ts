@@ -26,8 +26,7 @@ function box(
   return mesh;
 }
 
-function addFeature(
-  root: THREE.Object3D,
+function tagFeature(
   features: ExperienceFeature[],
   object: THREE.Object3D,
   id: string,
@@ -38,8 +37,21 @@ function addFeature(
   object.userData.experienceFeatureId = id;
   object.userData.experienceLabel = label;
   object.userData.experienceCategory = category;
-  root.add(object);
   features.push({ id, label, category, description, object });
+  return object;
+}
+
+function addFeature(
+  root: THREE.Object3D,
+  features: ExperienceFeature[],
+  object: THREE.Object3D,
+  id: string,
+  label: string,
+  category: string,
+  description: string,
+) {
+  tagFeature(features, object, id, label, category, description);
+  root.add(object);
 }
 
 function makeTree(height: number) {
@@ -125,7 +137,7 @@ function makePool(width: number, depth: number) {
   return group;
 }
 
-function makeInterior(width: number, depth: number, baseY: number) {
+function makeInterior(width: number, depth: number, baseY: number, features: ExperienceFeature[]) {
   const root = new THREE.Group();
   root.name = "furnished-show-flat";
 
@@ -151,6 +163,7 @@ function makeInterior(width: number, depth: number, baseY: number) {
 
   // Living room.
   const sofa = box([width * 0.34, 0.55, 1.0], fabric, [livingX, baseY + 0.36, depth * 0.1]);
+  tagFeature(features, sofa, "living", "Living Room", "Interior", "Furnished living room with sofa, TV and coffee table.");
   root.add(sofa);
   const sofaBack = box([width * 0.34, 0.75, 0.18], fabric, [livingX, baseY + 0.75, depth * 0.46]);
   root.add(sofaBack);
@@ -161,6 +174,7 @@ function makeInterior(width: number, depth: number, baseY: number) {
 
   // Bedroom.
   const bedBase = box([2.5, 0.34, 2.0], accent, [bedroomX, baseY + 0.25, depth * 0.05]);
+  tagFeature(features, bedBase, "bedroom", "Bedroom", "Interior", "Bedroom visualization with bed, pillows and wardrobe.");
   root.add(bedBase);
   const mattress = box([2.34, 0.28, 1.84], cream, [bedroomX, baseY + 0.56, depth * 0.05]);
   root.add(mattress);
@@ -173,14 +187,17 @@ function makeInterior(width: number, depth: number, baseY: number) {
 
   // Kitchen.
   const kitchenZ = -depth * 0.28;
+  const kitchenBase = box([2.5, 0.9, 0.62], standard(0xf1eee7, 0.65), [-width * 0.26, baseY + 0.52, kitchenZ]);
+  tagFeature(features, kitchenBase, "kitchen", "Kitchen", "Interior", "Modular kitchen visualization with counter and tall storage.");
   root.add(
-    box([2.5, 0.9, 0.62], standard(0xf1eee7, 0.65), [-width * 0.26, baseY + 0.52, kitchenZ]),
+    kitchenBase,
     box([2.5, 0.08, 0.7], dark, [-width * 0.26, baseY + 1.0, kitchenZ]),
     box([1.45, 1.8, 0.58], standard(0xe8e5dc, 0.62), [-width / 2 + 0.82, baseY + 1.0, kitchenZ]),
   );
 
   // Dining.
   const dining = box([1.55, 0.12, 1.0], accent, [0, baseY + 0.78, depth * 0.32]);
+  tagFeature(features, dining, "dining", "Dining Area", "Interior", "Dining table and seating area.");
   root.add(dining);
   for (const [x, z] of [[-0.95, 0], [0.95, 0], [0, -0.72], [0, 0.72]] as Array<[number, number]>) {
     const chair = box([0.48, 0.7, 0.48], standard(0xc48f65, 0.72), [x, baseY + 0.38, depth * 0.32 + z]);
@@ -190,8 +207,10 @@ function makeInterior(width: number, depth: number, baseY: number) {
   // Bathroom zone.
   const bathX = width * 0.32;
   const bathZ = -depth * 0.35;
+  const bath = box([1.15, 0.55, 0.65], standard(0xf5f7f8, 0.4), [bathX, baseY + 0.35, bathZ]);
+  tagFeature(features, bath, "bathroom", "Bathroom", "Interior", "Bathroom zone visualization with sanitary fixtures.");
   root.add(
-    box([1.15, 0.55, 0.65], standard(0xf5f7f8, 0.4), [bathX, baseY + 0.35, bathZ]),
+    bath,
     box([0.65, 0.9, 0.65], standard(0xffffff, 0.4), [bathX + 0.95, baseY + 0.48, bathZ]),
   );
 
@@ -205,9 +224,9 @@ function makeInterior(width: number, depth: number, baseY: number) {
     transparent: true,
     opacity: 0.72,
   });
-  root.add(
-    box([width * 0.55, 0.8, 0.06], rail, [width * 0.08, baseY + 0.46, balconyZ + 0.68]),
-  );
+  const balconyRail = box([width * 0.55, 0.8, 0.06], rail, [width * 0.08, baseY + 0.46, balconyZ + 0.68]);
+  tagFeature(features, balconyRail, "interior-balcony", "Balcony", "Interior", "Glass-railing balcony connected to the furnished show flat.");
+  root.add(balconyRail);
 
   // Warm ceiling lights.
   const lightMaterial = new THREE.MeshStandardMaterial({
@@ -224,9 +243,10 @@ function makeInterior(width: number, depth: number, baseY: number) {
   return root;
 }
 
-function makeTerrace(width: number, depth: number, baseY: number) {
+function makeTerrace(width: number, depth: number, baseY: number, features: ExperienceFeature[]) {
   const root = new THREE.Group();
   const deck = box([width, 0.18, depth], standard(0xb8946d, 0.78), [0, baseY, 0]);
+  tagFeature(features, deck, "terrace", "Roof Terrace", "Roof", "Usable terrace visualization with pergola, seating and planters.");
   root.add(deck);
 
   const pergolaMaterial = standard(0x5b3f31, 0.62);
@@ -330,11 +350,11 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
 
   const interiorWidth = Math.min(Math.max(spanX * 0.75, 7.2), 11.5);
   const interiorDepth = Math.min(Math.max(spanZ * 0.7, 6.2), 9.2);
-  const interior = makeInterior(interiorWidth, interiorDepth, 0);
+  const interior = makeInterior(interiorWidth, interiorDepth, 0, features);
   interior.position.set(center.x, baseY + 0.12, center.z);
   interiorRoot.add(interior);
 
-  const terrace = makeTerrace(Math.max(spanX * 0.8, 7), Math.max(spanZ * 0.62, 5.2), 0);
+  const terrace = makeTerrace(Math.max(spanX * 0.8, 7), Math.max(spanZ * 0.62, 5.2), 0, features);
   terrace.position.set(center.x, bounds.max.y + 0.18, center.z);
   terraceRoot.add(terrace);
 
