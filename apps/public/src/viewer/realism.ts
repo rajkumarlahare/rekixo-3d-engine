@@ -1,4 +1,51 @@
 import * as THREE from "three";
+import { sourceTextureData } from "./sourceTextureData";
+
+const sourceTextureCache = new Map<string, THREE.Texture>();
+const sourceTextureWaiters = new Map<string, THREE.MeshStandardMaterial[]>();
+
+function applySourceTexture(
+  material: THREE.MeshStandardMaterial,
+  anisotropy: number,
+) {
+  const key = material.name.replaceAll(" ", "_");
+  const dataUrl = sourceTextureData[key] ?? sourceTextureData[material.name];
+  if (!dataUrl) return;
+
+  const cached = sourceTextureCache.get(key);
+  if (cached) {
+    material.map = cached;
+    material.needsUpdate = true;
+    return;
+  }
+
+  const waiters = sourceTextureWaiters.get(key) ?? [];
+  waiters.push(material);
+  sourceTextureWaiters.set(key, waiters);
+  if (waiters.length > 1) return;
+
+  new THREE.TextureLoader().load(
+    dataUrl,
+    (texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.flipY = false;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.anisotropy = Math.max(texture.anisotropy || 1, anisotropy);
+      texture.needsUpdate = true;
+      sourceTextureCache.set(key, texture);
+      for (const target of sourceTextureWaiters.get(key) ?? []) {
+        target.map = texture;
+        target.needsUpdate = true;
+      }
+      sourceTextureWaiters.delete(key);
+    },
+    undefined,
+    () => {
+      sourceTextureWaiters.delete(key);
+    },
+  );
+}
 
 type MeshFloorState = {
   mesh: THREE.Mesh;
@@ -38,14 +85,34 @@ export function enhanceArchitecturalModel(
       tuneTexture(material.metalnessMap, anisotropy);
       tuneTexture(material.aoMap, anisotropy);
       tuneTexture(material.emissiveMap, anisotropy);
+      applySourceTexture(material, anisotropy);
 
       material.envMapIntensity = Math.max(material.envMapIntensity || 1, 1.18);
 
+      if (name === "frontcolor") {
+        material.color.setHex(0xf0ede6);
+        material.roughness = 0.7;
+        material.metalness = 0.01;
+      } else if (name === "color_m06") {
+        material.color.setHex(0x3d3f42);
+        material.roughness = 0.52;
+        material.metalness = 0.08;
+      } else if (name === "color_m00") {
+        material.color.setHex(0xf5f2ec);
+        material.roughness = 0.72;
+        material.metalness = 0.01;
+      } else if (name === "color_a06") {
+        material.color.setHex(0x8b6247);
+        material.roughness = 0.5;
+        material.metalness = 0.02;
+      }
+
       if (/glass|window|translucent/.test(name)) {
-        material.roughness = Math.min(material.roughness, 0.18);
+        material.color.setHex(0x9fc7d4);
+        material.roughness = Math.min(material.roughness, 0.14);
         material.metalness = Math.min(material.metalness, 0.05);
         material.transparent = true;
-        material.opacity = Math.min(material.opacity, 0.72);
+        material.opacity = Math.min(material.opacity, 0.58);
         material.depthWrite = false;
       } else if (/metal|steel|aluminium|aluminum|railing|panel/.test(name)) {
         material.metalness = Math.max(material.metalness, 0.55);
