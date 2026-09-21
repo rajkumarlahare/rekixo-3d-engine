@@ -47,19 +47,19 @@ const sourceMaterialTint: Record<string, number> = {
 // web-viewer appearance so the live model reads like the approved warm facade
 // instead of a flat white/grey CAD viewport.
 const referenceFacadeTint: Record<string, number> = {
-  frontcolor: 0xe3ddd5,
-  color_m00: 0xece7df,
-  color_m06: 0x2f3439,
-  slate_light_tile: 0x30353a,
-  slate: 0x4c5155,
-  metal_panel: 0x704d40,
-  color_a06: 0x8f5b43,
-  color_j08: 0xa4b4aa,
-  translucent_glass_blue: 0x7f98a3,
-  tile_mosaic_multi: 0x765147,
-  tile_ceramic_multi: 0x805747,
-  tile_large_brown: 0x8f6756,
-  roofing_slate_tan: 0x745447,
+  frontcolor: 0xdcd5cc,
+  color_m00: 0xe9e3da,
+  color_m06: 0x2a3035,
+  slate_light_tile: 0x2f3438,
+  slate: 0x474d52,
+  metal_panel: 0x68483c,
+  color_a06: 0x8a5742,
+  color_j08: 0xb2beb2,
+  translucent_glass_blue: 0x829ba5,
+  tile_mosaic_multi: 0x704d44,
+  tile_ceramic_multi: 0x7b5243,
+  tile_large_brown: 0x8a6251,
+  roofing_slate_tan: 0x704f43,
 };
 
 function normalizedMaterialName(name: string) {
@@ -170,37 +170,41 @@ export function enhanceArchitecturalModel(
       if (displayTint !== undefined && !material.map) {
         material.color.setHex(displayTint);
       }
-      material.envMapIntensity = referenceVisual ? 0.54 : 0.72;
+      material.envMapIntensity = referenceVisual ? 0.50 : 0.72;
 
       if (name === "frontcolor") {
-        material.roughness = 0.74;
+        material.roughness = referenceVisual ? 0.8 : 0.74;
         material.metalness = 0.01;
       } else if (name === "color_m06" || name === "slate_light_tile") {
-        material.roughness = 0.48;
-        material.metalness = 0.06;
+        material.roughness = referenceVisual ? 0.44 : 0.48;
+        material.metalness = referenceVisual ? 0.08 : 0.06;
       } else if (name === "color_m00") {
-        material.roughness = 0.76;
+        material.roughness = referenceVisual ? 0.8 : 0.76;
         material.metalness = 0.01;
       } else if (name === "color_a06" || name === "tile_ceramic_multi" || name === "tile_large_brown") {
-        material.roughness = 0.52;
+        material.roughness = referenceVisual ? 0.6 : 0.52;
         material.metalness = 0.02;
       } else if (name === "metal_panel") {
-        // In the reference elevation this reads as warm architectural cladding,
-        // not bare silver metal.
-        material.roughness = 0.5;
-        material.metalness = 0.12;
+        // Warm cladding from the supplied reference; keep it matte enough to
+        // avoid the silver/plastic look of the previous live pass.
+        material.roughness = referenceVisual ? 0.58 : 0.5;
+        material.metalness = referenceVisual ? 0.09 : 0.12;
       } else if (name === "color_j08") {
-        material.roughness = 0.72;
+        material.roughness = referenceVisual ? 0.78 : 0.72;
         material.metalness = 0.01;
       }
 
       if (/glass|window|translucent/.test(name)) {
-        material.color.setHex(referenceVisual ? 0x7f98a3 : 0x718c93);
-        material.roughness = Math.min(material.roughness, referenceVisual ? 0.11 : 0.14);
+        material.color.setHex(referenceVisual ? 0x829ba5 : 0x718c93);
+        material.roughness = Math.min(material.roughness, referenceVisual ? 0.09 : 0.14);
         material.metalness = Math.min(material.metalness, 0.05);
         material.transparent = true;
-        material.opacity = Math.min(material.opacity, referenceVisual ? 0.5 : 0.62);
+        material.opacity = Math.min(material.opacity, referenceVisual ? 0.42 : 0.62);
         material.depthWrite = false;
+        if (referenceVisual) {
+          material.emissive.setHex(0x24150d);
+          material.emissiveIntensity = 0.16;
+        }
       } else if (/metal|steel|aluminium|aluminum|railing|panel/.test(name)) {
         material.metalness = Math.max(material.metalness, 0.55);
         material.roughness = Math.min(Math.max(material.roughness, 0.24), 0.42);
