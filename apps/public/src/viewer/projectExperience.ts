@@ -447,17 +447,20 @@ function addFacadeWarmLights(root: THREE.Object3D, bounds: THREE.Box3, mobile: b
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
   const lightMat = new THREE.MeshStandardMaterial({
-    color: 0xffe8c6,
-    emissive: 0xffa65a,
-    emissiveIntensity: 4.2,
-    roughness: 0.3,
+    color: 0xfff0d9,
+    emissive: 0xffb66e,
+    emissiveIntensity: 2.8,
+    roughness: 0.34,
   });
   const floors = [0.23, 0.36, 0.49, 0.62, 0.75, 0.88];
   for (const ratio of floors) {
     const y = bounds.min.y + size.y * ratio;
     for (const xRatio of [-0.32, 0.02, 0.34]) {
-      const fixture = new THREE.Mesh(new THREE.SphereGeometry(Math.max(size.x * 0.008, 0.055), 10, 8), lightMat);
-      fixture.position.set(center.x + size.x * xRatio, y, bounds.max.z + Math.max(size.z * 0.012, 0.04));
+      // Recessed facade pin-lights: intentionally tiny so they read like the
+      // brochure render instead of floating white locator spheres.
+      const fixtureRadius = Math.min(Math.max(size.x * 0.0018, 0.022), 0.042);
+      const fixture = new THREE.Mesh(new THREE.SphereGeometry(fixtureRadius, 8, 6), lightMat);
+      fixture.position.set(center.x + size.x * xRatio, y, bounds.max.z + Math.max(size.z * 0.006, 0.025));
       root.add(fixture);
     }
   }
