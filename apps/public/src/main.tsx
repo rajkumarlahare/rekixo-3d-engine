@@ -423,7 +423,7 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
           </div>
         </header>
 
-        <nav className="twin-rail" aria-label="Jyoti Paradise digital twin navigation">
+        <nav className="twin-rail" aria-label="Digital twin project navigation">
           {twinModes.map((item, index) => (
             <button
               type="button"
