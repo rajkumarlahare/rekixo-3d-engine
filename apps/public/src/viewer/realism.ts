@@ -43,23 +43,23 @@ const sourceMaterialTint: Record<string, number> = {
 
 // The FBX diffuse colors above remain the source-of-truth audit values.
 // This second layer is a presentation calibration derived from the supplied
-// supplied brochure/exterior render. It intentionally changes only the
+// brochure/exterior render. It intentionally changes only the
 // web-viewer appearance so the live model reads like the approved warm facade
 // instead of a flat white/grey CAD viewport.
 const referenceFacadeTint: Record<string, number> = {
-  frontcolor: 0xeee9e2,
-  color_m00: 0xf3efe8,
-  color_m06: 0x343a3f,
-  slate_light_tile: 0x30363a,
-  slate: 0x51575a,
-  metal_panel: 0x77513f,
-  color_a06: 0xa06d51,
-  color_j08: 0xb8c9bd,
-  translucent_glass_blue: 0x718995,
-  tile_mosaic_multi: 0x805a4b,
-  tile_ceramic_multi: 0x8b5e48,
-  tile_large_brown: 0xa27860,
-  roofing_slate_tan: 0x86614d,
+  frontcolor: 0xe3ddd5,
+  color_m00: 0xece7df,
+  color_m06: 0x2f3439,
+  slate_light_tile: 0x30353a,
+  slate: 0x4c5155,
+  metal_panel: 0x704d40,
+  color_a06: 0x8f5b43,
+  color_j08: 0xa4b4aa,
+  translucent_glass_blue: 0x7f98a3,
+  tile_mosaic_multi: 0x765147,
+  tile_ceramic_multi: 0x805747,
+  tile_large_brown: 0x8f6756,
+  roofing_slate_tan: 0x745447,
 };
 
 function normalizedMaterialName(name: string) {
@@ -72,10 +72,13 @@ const sourceTextureWaiters = new Map<string, THREE.MeshStandardMaterial[]>();
 function applySourceTexture(
   material: THREE.MeshStandardMaterial,
   anisotropy: number,
+  referenceVisual: boolean,
 ) {
   const key = material.name.replaceAll(" ", "_");
   const normalized = normalizedMaterialName(material.name);
-  const tint = referenceFacadeTint[normalized] ?? sourceMaterialTint[normalized];
+  const tint = referenceVisual
+    ? referenceFacadeTint[normalized] ?? sourceMaterialTint[normalized]
+    : sourceMaterialTint[normalized];
   const dataUrl = sourceTextureData[key] ?? sourceTextureData[material.name];
   if (!dataUrl) return;
 
@@ -104,7 +107,9 @@ function applySourceTexture(
       sourceTextureCache.set(key, texture);
       for (const target of sourceTextureWaiters.get(key) ?? []) {
         const normalizedTarget = normalizedMaterialName(target.name);
-        const targetTint = referenceFacadeTint[normalizedTarget] ?? sourceMaterialTint[normalizedTarget];
+        const targetTint = referenceVisual
+          ? referenceFacadeTint[normalizedTarget] ?? sourceMaterialTint[normalizedTarget]
+          : sourceMaterialTint[normalizedTarget];
         if (targetTint !== undefined) target.color.setHex(targetTint);
         target.map = texture;
         target.needsUpdate = true;
@@ -137,6 +142,7 @@ function tuneTexture(texture: THREE.Texture | null | undefined, anisotropy: numb
 export function enhanceArchitecturalModel(
   root: THREE.Object3D,
   renderer: THREE.WebGLRenderer,
+  referenceVisual = false,
 ) {
   const anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
 
@@ -156,13 +162,15 @@ export function enhanceArchitecturalModel(
       tuneTexture(material.metalnessMap, anisotropy);
       tuneTexture(material.aoMap, anisotropy);
       tuneTexture(material.emissiveMap, anisotropy);
-      applySourceTexture(material, anisotropy);
+      applySourceTexture(material, anisotropy, referenceVisual);
 
-      const displayTint = referenceFacadeTint[name] ?? sourceMaterialTint[name];
+      const displayTint = referenceVisual
+        ? referenceFacadeTint[name] ?? sourceMaterialTint[name]
+        : sourceMaterialTint[name];
       if (displayTint !== undefined && !material.map) {
         material.color.setHex(displayTint);
       }
-      material.envMapIntensity = 0.72;
+      material.envMapIntensity = referenceVisual ? 0.54 : 0.72;
 
       if (name === "frontcolor") {
         material.roughness = 0.74;
@@ -187,11 +195,11 @@ export function enhanceArchitecturalModel(
       }
 
       if (/glass|window|translucent/.test(name)) {
-        material.color.setHex(0x718c93);
-        material.roughness = Math.min(material.roughness, 0.14);
+        material.color.setHex(referenceVisual ? 0x7f98a3 : 0x718c93);
+        material.roughness = Math.min(material.roughness, referenceVisual ? 0.11 : 0.14);
         material.metalness = Math.min(material.metalness, 0.05);
         material.transparent = true;
-        material.opacity = Math.min(material.opacity, 0.62);
+        material.opacity = Math.min(material.opacity, referenceVisual ? 0.5 : 0.62);
         material.depthWrite = false;
       } else if (/metal|steel|aluminium|aluminum|railing|panel/.test(name)) {
         material.metalness = Math.max(material.metalness, 0.55);

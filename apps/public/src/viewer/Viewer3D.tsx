@@ -250,8 +250,8 @@ export function Viewer3D({
     scene.background = new THREE.Color(0x8faec8);
     scene.fog = new THREE.FogExp2(0xa9bfd0, 0.0015);
     if (referenceVisual) {
-      scene.background = new THREE.Color(0x8195aa);
-      scene.fog = new THREE.FogExp2(0x93a4b3, 0.00125);
+      scene.background = new THREE.Color(0x75889c);
+      scene.fog = new THREE.FogExp2(0x8798a8, 0.00105);
     }
     let modelBounds: THREE.Box3 | undefined;
 
@@ -259,15 +259,15 @@ export function Viewer3D({
     camera.position.set(8, 6, 9);
 
     const renderer = new THREE.WebGLRenderer({
-      antialias: !mobile,
+      antialias: referenceVisual || !mobile,
       alpha: false,
       powerPreference: "high-performance",
     });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.9;
-    if (referenceVisual) renderer.toneMappingExposure = 1.03;
-    renderer.shadowMap.enabled = !mobile;
+    if (referenceVisual) renderer.toneMappingExposure = 0.88;
+    renderer.shadowMap.enabled = referenceVisual || !mobile;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.35 : 2));
     renderer.domElement.className = "viewer-canvas";
@@ -294,14 +294,14 @@ export function Viewer3D({
     if (referenceVisual) {
       hemi.color.setHex(0xd6e4ef);
       hemi.groundColor.setHex(0x5b5148);
-      hemi.intensity = 1.22;
+      hemi.intensity = 0.96;
     }
     scene.add(hemi);
 
     const sun = new THREE.DirectionalLight(0xffe4c2, 2.25);
     if (referenceVisual) {
       sun.color.setHex(0xffd3a6);
-      sun.intensity = 2.05;
+      sun.intensity = 1.62;
     }
     sun.position.set(10, 18, 12);
     sun.castShadow = renderer.shadowMap.enabled;
@@ -312,11 +312,11 @@ export function Viewer3D({
     sun.shadow.normalBias = 0.018;
     scene.add(sun);
 
-    const fill = new THREE.DirectionalLight(0x99bfe0, referenceVisual ? 0.38 : 0.55);
+    const fill = new THREE.DirectionalLight(0x99bfe0, referenceVisual ? 0.22 : 0.55);
     fill.position.set(-10, 8, -7);
     scene.add(fill);
 
-    const warmFill = new THREE.PointLight(0xffa35c, referenceVisual ? 1.25 : 0, 120, 1.5);
+    const warmFill = new THREE.PointLight(0xffa35c, referenceVisual ? 1.9 : 0, 120, 1.5);
     warmFill.position.set(0, 18, 18);
     scene.add(warmFill);
 
@@ -324,7 +324,7 @@ export function Viewer3D({
     const environmentTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = environmentTexture;
     scene.environmentIntensity = 0.65;
-    if (referenceVisual) scene.environmentIntensity = 0.58;
+    if (referenceVisual) scene.environmentIntensity = 0.46;
 
     const updateSize = () => {
       const width = Math.max(hostElement.clientWidth, 1);
@@ -384,18 +384,18 @@ export function Viewer3D({
 
     const applyLighting = (night: boolean) => {
       scene.background = new THREE.Color(
-        night ? 0x101827 : referenceVisual ? 0x8195aa : 0x8faec8,
+        night ? 0x101827 : referenceVisual ? 0x75889c : 0x8faec8,
       );
       scene.fog = new THREE.FogExp2(
-        night ? 0x182130 : referenceVisual ? 0x93a4b3 : 0xa9bfd0,
-        night ? 0.0025 : referenceVisual ? 0.00125 : 0.0015,
+        night ? 0x182130 : referenceVisual ? 0x8798a8 : 0xa9bfd0,
+        night ? 0.0025 : referenceVisual ? 0.00105 : 0.0015,
       );
-      hemi.intensity = night ? 0.72 : referenceVisual ? 1.22 : 1.45;
-      sun.intensity = night ? 0.38 : referenceVisual ? 2.05 : 2.25;
-      fill.intensity = night ? 0.3 : referenceVisual ? 0.38 : 0.55;
-      warmFill.intensity = night ? 7 : referenceVisual ? 1.25 : 0;
-      renderer.toneMappingExposure = night ? 0.82 : referenceVisual ? 1.03 : 0.9;
-      scene.environmentIntensity = night ? 0.42 : referenceVisual ? 0.58 : 0.65;
+      hemi.intensity = night ? 0.72 : referenceVisual ? 0.96 : 1.45;
+      sun.intensity = night ? 0.38 : referenceVisual ? 1.62 : 2.25;
+      fill.intensity = night ? 0.3 : referenceVisual ? 0.22 : 0.55;
+      warmFill.intensity = night ? 7 : referenceVisual ? 1.9 : 0;
+      renderer.toneMappingExposure = night ? 0.82 : referenceVisual ? 0.88 : 0.9;
+      scene.environmentIntensity = night ? 0.42 : referenceVisual ? 0.46 : 0.65;
       siteEnvironment?.setNight(night);
       projectExperience?.setNight(night);
     };
@@ -537,7 +537,7 @@ export function Viewer3D({
       scene.add(object);
       object.updateMatrixWorld(true);
       modelBounds = new THREE.Box3().setFromObject(object);
-      enhanceArchitecturalModel(object, renderer);
+      enhanceArchitecturalModel(object, renderer, referenceVisual);
       floorExploder = createFloorExploder(object, modelBounds);
       explodeRef.current = (enabled) => floorExploder?.setExploded(enabled);
 
@@ -559,23 +559,23 @@ export function Viewer3D({
 
       projectExperience?.dispose();
       if (projectExperience) scene.remove(projectExperience.root);
-      projectExperience = createProjectExperience(bounds, mobile);
+      projectExperience = createProjectExperience(bounds, mobile, referenceVisual);
       scene.add(projectExperience.root);
 
       const viewTarget = (view: PresentationView) => {
         if (view === "aerial") {
           if (referenceVisual) return {
             position: new THREE.Vector3(
-              centerForView.x + radiusForView * 1.34,
-              bounds.min.y + sizeForView.y * 0.34,
-              centerForView.z + radiusForView * 1.62,
+              centerForView.x + radiusForView * (mobile ? 0.92 : 1.08),
+              bounds.min.y + sizeForView.y * (mobile ? 0.24 : 0.28),
+              centerForView.z + radiusForView * (mobile ? 1.08 : 1.28),
             ),
             target: new THREE.Vector3(
-              centerForView.x,
-              bounds.min.y + sizeForView.y * 0.47,
+              centerForView.x + sizeForView.x * 0.015,
+              bounds.min.y + sizeForView.y * 0.49,
               centerForView.z,
             ),
-            fov: 33,
+            fov: mobile ? 29 : 31,
           };
           return {
             position: new THREE.Vector3(centerForView.x + radiusForView * 1.65, centerForView.y + radiusForView * 1.45, centerForView.z + radiusForView * 1.65),
@@ -601,15 +601,15 @@ export function Viewer3D({
         if (view === "building") return {
           position: referenceVisual
             ? new THREE.Vector3(
-                centerForView.x + radiusForView * 1.05,
-                bounds.min.y + sizeForView.y * 0.29,
-                centerForView.z + radiusForView * 1.28,
+                centerForView.x + radiusForView * (mobile ? 0.84 : 0.98),
+                bounds.min.y + sizeForView.y * (mobile ? 0.22 : 0.26),
+                centerForView.z + radiusForView * (mobile ? 1.02 : 1.16),
               )
             : new THREE.Vector3(centerForView.x + radiusForView * 1.15, centerForView.y + radiusForView * 0.58, centerForView.z + radiusForView * 1.15),
           target: referenceVisual
-            ? new THREE.Vector3(centerForView.x, bounds.min.y + sizeForView.y * 0.48, centerForView.z)
+            ? new THREE.Vector3(centerForView.x, bounds.min.y + sizeForView.y * 0.50, centerForView.z)
             : centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)),
-          fov: referenceVisual ? 35 : 39,
+          fov: referenceVisual ? (mobile ? 28 : 30) : 39,
         };
         return homeView ? { position: homeView.position.clone(), target: homeView.target.clone(), fov: homeView.fov } : undefined;
       };
