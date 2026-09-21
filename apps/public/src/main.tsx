@@ -461,7 +461,7 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
             {mode === "building" && "Inspect the building facade from a premium architectural camera."}
             {mode === "floors" && "Separate the building stack or focus a single verified floor."}
             {mode === "units" && "Select brochure-backed units on a floor without inventing geometry."}
-            {mode === "interior" && "Explore the brochure-backed typical floor: Flats 101/102/103, lobby, stair, fire lift, rooms, kitchens, toilets and balconies. Click rooms for exact source dimensions."}
+            {mode === "interior" && "Explore the brochure-backed typical floor: Flats 101/102/103, lobby, stair, fire lift, rooms, kitchens, toilets and balconies. Click rooms for brochure dimensions and source-backed placement. Where brochure/DWG values conflict, the conflict is recorded instead of silently forcing one value."}
             {mode === "terrace" && "Inspect the actual roof massing and edge lighting. No recreational roof amenity is claimed because it is not present in the supplied brochure."}
             {mode === "amenities" && "Review only the brochure-listed amenities: Car Parking, Modular Kitchen, POP in Hall and CCTV Camera."}
             {mode === "balcony" && "Inspect the facade and balcony side from a dedicated viewing angle."}
