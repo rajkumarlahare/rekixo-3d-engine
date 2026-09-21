@@ -100,7 +100,7 @@ Final modules:
 5. **Section Cut** — interactive clipping of the active 3D model. It is explicitly not represented as an approved structural section drawing.
 6. **Facade Detail** — closer interactive inspection of exterior balcony/facade geometry. It does not claim to be an interior panorama.
 
-The previous **Wing Distance** module remains disabled because the supplied source package does not establish a verified multi-wing layout.
+The existing spatial `wing-distance` scene slot is reused internally for the user-facing **Location Map** connectivity module so the production D1 scene-type constraint remains unchanged. No multi-wing distance claim is published.
 
 ## Geometry lock used by the viewer
 
