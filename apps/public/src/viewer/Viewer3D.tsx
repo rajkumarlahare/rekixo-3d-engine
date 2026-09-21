@@ -243,8 +243,8 @@ export function Viewer3D({
 
     const mobile = isMobileDevice();
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xb8cee0);
-    scene.fog = new THREE.FogExp2(0xc4d4df, 0.006);
+    scene.background = new THREE.Color(0x8faec8);
+    scene.fog = new THREE.FogExp2(0xa9bfd0, 0.0015);
     let modelBounds: THREE.Box3 | undefined;
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 2000);
@@ -257,7 +257,7 @@ export function Viewer3D({
     });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.28;
+    renderer.toneMappingExposure = 0.9;
     renderer.shadowMap.enabled = !mobile;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.35 : 2));
@@ -281,10 +281,10 @@ export function Viewer3D({
       camera.quaternion.setFromEuler(euler);
     };
 
-    const hemi = new THREE.HemisphereLight(0xeaf5ff, 0x7d746b, 3.25);
+    const hemi = new THREE.HemisphereLight(0xdcecff, 0x514b45, 1.45);
     scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xfff1dc, 4.65);
+    const sun = new THREE.DirectionalLight(0xffe4c2, 2.25);
     sun.position.set(10, 18, 12);
     sun.castShadow = renderer.shadowMap.enabled;
     sun.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
@@ -294,7 +294,7 @@ export function Viewer3D({
     sun.shadow.normalBias = 0.018;
     scene.add(sun);
 
-    const fill = new THREE.DirectionalLight(0xb8d9ff, 1.75);
+    const fill = new THREE.DirectionalLight(0x99bfe0, 0.55);
     fill.position.set(-10, 8, -7);
     scene.add(fill);
 
@@ -302,21 +302,10 @@ export function Viewer3D({
     warmFill.position.set(0, 18, 18);
     scene.add(warmFill);
 
-    const groundMaterial = new THREE.MeshStandardMaterial({
-      color: 0x9e988f,
-      roughness: 0.92,
-      metalness: 0.02,
-    });
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(16, 72), groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.03;
-    ground.receiveShadow = true;
-    scene.add(ground);
-
     const pmrem = new THREE.PMREMGenerator(renderer);
     const environmentTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = environmentTexture;
-    scene.environmentIntensity = 1.48;
+    scene.environmentIntensity = 0.65;
 
     const updateSize = () => {
       const width = Math.max(hostElement.clientWidth, 1);
@@ -375,14 +364,14 @@ export function Viewer3D({
     };
 
     const applyLighting = (night: boolean) => {
-      scene.background = new THREE.Color(night ? 0x07101f : 0xb8cee0);
-      scene.fog = new THREE.FogExp2(night ? 0x0b1422 : 0xc4d4df, night ? 0.009 : 0.006);
-      hemi.intensity = night ? 1.05 : 3.25;
-      sun.intensity = night ? 0.72 : 4.65;
-      fill.intensity = night ? 0.72 : 1.75;
-      warmFill.intensity = night ? 13 : 1.2;
-      renderer.toneMappingExposure = night ? 1.12 : 1.28;
-      scene.environmentIntensity = night ? 0.82 : 1.48;
+      scene.background = new THREE.Color(night ? 0x101827 : 0x8faec8);
+      scene.fog = new THREE.FogExp2(night ? 0x182130 : 0xa9bfd0, night ? 0.0025 : 0.0015);
+      hemi.intensity = night ? 0.72 : 1.45;
+      sun.intensity = night ? 0.38 : 2.25;
+      fill.intensity = night ? 0.3 : 0.55;
+      warmFill.intensity = night ? 7 : 0;
+      renderer.toneMappingExposure = night ? 0.82 : 0.9;
+      scene.environmentIntensity = night ? 0.42 : 0.65;
       siteEnvironment?.setNight(night);
       projectExperience?.setNight(night);
     };
@@ -506,11 +495,6 @@ export function Viewer3D({
       enhanceArchitecturalModel(object, renderer);
       floorExploder = createFloorExploder(object, modelBounds);
       explodeRef.current = (enabled) => floorExploder?.setExploded(enabled);
-
-      const size = modelBounds.getSize(new THREE.Vector3());
-      const groundSize = Math.max(size.x, size.z, 12);
-      ground.scale.setScalar(Math.max(1, groundSize / 20));
-      ground.position.y = modelBounds.min.y - Math.max(size.y * 0.002, 0.02);
 
       homeView =
         usePreset && cameraPreset
@@ -768,8 +752,6 @@ export function Viewer3D({
         scene.remove(projectExperience.root);
         projectExperience.dispose();
       }
-      ground.geometry.dispose();
-      groundMaterial.dispose();
       environmentTexture.dispose();
       pmrem.dispose();
       renderer.dispose();

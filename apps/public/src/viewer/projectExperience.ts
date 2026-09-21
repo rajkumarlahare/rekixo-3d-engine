@@ -378,7 +378,7 @@ function makeRoofOverlay(bounds: THREE.Box3, features: ExperienceFeature[]) {
   const glow = new THREE.MeshStandardMaterial({
     color: 0xffdfb0,
     emissive: 0xff9f4a,
-    emissiveIntensity: 4.2,
+    emissiveIntensity: 2.2,
     roughness: 0.35,
   });
   root.add(
@@ -409,7 +409,7 @@ function addFacadeWarmLights(root: THREE.Object3D, bounds: THREE.Box3, mobile: b
 
   if (!mobile) {
     for (const xRatio of [-0.3, 0.28]) {
-      const light = new THREE.PointLight(0xffb56d, 5.5, Math.max(size.x * 0.72, 10), 2);
+      const light = new THREE.PointLight(0xffb56d, 2.2, Math.max(size.x * 0.72, 10), 2);
       light.position.set(
         center.x + size.x * xRatio,
         bounds.min.y + size.y * 0.48,

@@ -1,6 +1,50 @@
 import * as THREE from "three";
 import { sourceTextureData } from "./sourceTextureData";
 
+const sourceMaterialTint: Record<string, number> = {
+  frontcolor: 0xffffff,
+  tile_canvas: 0xc7c0ad,
+  marble_carrara_floor_tile: 0xccd0db,
+  slate_light_tile: 0x363636,
+  square_glass_tile_02: 0x78b78c,
+  square_glass_tile_01: 0x7b8e97,
+  square_glass_tile_04: 0xddc57a,
+  square_glass_tile_03: 0xa0a38d,
+  slate: 0x666e6c,
+  metal_panel: 0x8f9d9e,
+  marble_carrara_gold_floor_tile: 0xe1dfd9,
+  mosaic_hexagonal_tile: 0xa8c2df,
+  ornate_tile_02: 0xc9c9c9,
+  ornate_tile_01: 0xcacaCA,
+  basic_tile: 0xcbcecA,
+  concrete_pavers_block_multi: 0x7c8c91,
+  encaustic_tile_circular_01: 0x7b7b7a,
+  color_004: 0x8e8e8e,
+  color_a06: 0xc29b7a,
+  translucent_glass_blue: 0x626b68,
+  tile_mosaic_multi: 0x876760,
+  roofing_slate_tan: 0xc8af80,
+  encaustic_tile_circular_02: 0xbbaea2,
+  tile_border_travertine: 0xa08e70,
+  white_subway_tile: 0xf3fcfd,
+  tile_grey: 0x858585,
+  color_m06: 0x565656,
+  color_j08: 0x330066,
+  color_m00: 0xffffff,
+  granite_tile: 0x9b9490,
+  field_square_tile: 0xd9c9a9,
+  herringbone: 0x828282,
+  tile_ceramic_multi: 0xa57354,
+  tile_ceramic_natural: 0xbdb486,
+  field_rectangle_tile: 0xc4bdb3,
+  concrete_tile: 0xcbbfa4,
+  tile_large_brown: 0xc3b29f,
+};
+
+function normalizedMaterialName(name: string) {
+  return name.trim().toLowerCase().replaceAll(" ", "_");
+}
+
 const sourceTextureCache = new Map<string, THREE.Texture>();
 const sourceTextureWaiters = new Map<string, THREE.MeshStandardMaterial[]>();
 
@@ -9,12 +53,13 @@ function applySourceTexture(
   anisotropy: number,
 ) {
   const key = material.name.replaceAll(" ", "_");
+  const tint = sourceMaterialTint[normalizedMaterialName(material.name)];
   const dataUrl = sourceTextureData[key] ?? sourceTextureData[material.name];
   if (!dataUrl) return;
 
   const cached = sourceTextureCache.get(key);
   if (cached) {
-    material.color.setHex(0xffffff);
+    if (tint !== undefined) material.color.setHex(tint);
     material.map = cached;
     material.needsUpdate = true;
     return;
@@ -36,7 +81,8 @@ function applySourceTexture(
       texture.needsUpdate = true;
       sourceTextureCache.set(key, texture);
       for (const target of sourceTextureWaiters.get(key) ?? []) {
-        target.color.setHex(0xffffff);
+        const targetTint = sourceMaterialTint[normalizedMaterialName(target.name)];
+        if (targetTint !== undefined) target.color.setHex(targetTint);
         target.map = texture;
         target.needsUpdate = true;
       }
@@ -78,7 +124,7 @@ export function enhanceArchitecturalModel(
     object.receiveShadow = true;
 
     for (const material of materialList(object.material)) {
-      const name = material.name.toLowerCase();
+      const name = normalizedMaterialName(material.name);
       if (!(material instanceof THREE.MeshStandardMaterial)) continue;
 
       tuneTexture(material.map, anisotropy);
@@ -89,32 +135,32 @@ export function enhanceArchitecturalModel(
       tuneTexture(material.emissiveMap, anisotropy);
       applySourceTexture(material, anisotropy);
 
-      material.envMapIntensity = Math.max(material.envMapIntensity || 1, 1.42);
+      const sourceTint = sourceMaterialTint[name];
+      if (sourceTint !== undefined && !material.map) {
+        material.color.setHex(sourceTint);
+      }
+      material.envMapIntensity = 0.72;
 
       if (name === "frontcolor") {
-        material.color.setHex(0xf4f0e9);
-        material.roughness = 0.7;
+        material.roughness = 0.78;
         material.metalness = 0.01;
       } else if (name === "color_m06") {
-        material.color.setHex(0x34373a);
-        material.roughness = 0.52;
-        material.metalness = 0.08;
+        material.roughness = 0.56;
+        material.metalness = 0.07;
       } else if (name === "color_m00") {
-        material.color.setHex(0xf8f5ef);
-        material.roughness = 0.72;
+        material.roughness = 0.78;
         material.metalness = 0.01;
       } else if (name === "color_a06") {
-        material.color.setHex(0x95694a);
-        material.roughness = 0.5;
+        material.roughness = 0.56;
         material.metalness = 0.02;
       }
 
       if (/glass|window|translucent/.test(name)) {
-        material.color.setHex(0xa8d0df);
+        material.color.setHex(0x718c93);
         material.roughness = Math.min(material.roughness, 0.14);
         material.metalness = Math.min(material.metalness, 0.05);
         material.transparent = true;
-        material.opacity = Math.min(material.opacity, 0.48);
+        material.opacity = Math.min(material.opacity, 0.62);
         material.depthWrite = false;
       } else if (/metal|steel|aluminium|aluminum|railing|panel/.test(name)) {
         material.metalness = Math.max(material.metalness, 0.55);
