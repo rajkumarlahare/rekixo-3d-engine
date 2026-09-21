@@ -33,8 +33,8 @@ test("premium shell exposes touch and desktop room walkthrough", () => {
 test("walk mode uses interior bounds", () => {
   const viewer = read("apps/public/src/viewer/Viewer3D.tsx");
   assert.match(viewer, /visualPreset\?: "default" \| "jyoti-reference"/);
-  assert.match(viewer, /experienceMode === "interior" && projectExperience/);
-  assert.match(viewer, /projectExperience\.focus\("interior"\)\.box\.clone\(\)/);
+  assert.match(viewer, /experienceMode === "interior" \? projectExperience : undefined/);
+  assert.match(viewer, /interiorExperience\.focus\("interior"\)\.box\.clone\(\)/);
   assert.match(viewer, /activeWalkBounds/);
   assert.match(viewer, /clampWalkPosition\(camera\.position, activeWalkBounds\)/);
 });
