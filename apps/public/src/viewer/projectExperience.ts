@@ -14,6 +14,19 @@ function standard(color: number, roughness = 0.72, metalness = 0.02) {
   return new THREE.MeshStandardMaterial({ color, roughness, metalness });
 }
 
+function glass(color = 0x9fc8d9, opacity = 0.58) {
+  return new THREE.MeshPhysicalMaterial({
+    color,
+    roughness: 0.12,
+    metalness: 0.02,
+    transmission: 0.16,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    clearcoat: 0.5,
+  });
+}
+
 function box(
   size: [number, number, number],
   material: THREE.Material,
@@ -54,224 +67,335 @@ function addFeature(
   root.add(object);
 }
 
-function makeTree(height: number) {
+function makeConifer(height: number) {
   const group = new THREE.Group();
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(height * 0.055, height * 0.075, height * 0.42, 10),
-    standard(0x76513a, 0.92),
+    new THREE.CylinderGeometry(height * 0.045, height * 0.065, height * 0.34, 9),
+    standard(0x6c4932, 0.94),
   );
-  trunk.position.y = height * 0.21;
+  trunk.position.y = height * 0.17;
   trunk.castShadow = true;
   group.add(trunk);
 
-  const leafMaterial = standard(0x2f7d45, 0.94);
-  for (const [x, y, z, scale] of [
-    [0, 0.63, 0, 0.3],
-    [0.18, 0.72, 0.05, 0.23],
-    [-0.17, 0.73, -0.05, 0.24],
-    [0.02, 0.84, -0.1, 0.22],
-  ] as Array<[number, number, number, number]>) {
+  const leaf = standard(0x315e35, 0.96);
+  for (const [y, radius] of [
+    [0.34, 0.22],
+    [0.49, 0.26],
+    [0.64, 0.22],
+    [0.78, 0.16],
+  ] as Array<[number, number]>) {
     const crown = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(height * scale, 2),
-      leafMaterial,
+      new THREE.ConeGeometry(height * radius, height * 0.32, 12),
+      leaf,
     );
-    crown.position.set(x * height, y * height, z * height);
+    crown.position.y = height * y;
     crown.castShadow = true;
     group.add(crown);
   }
   return group;
 }
 
-function makeFlowerBed(width: number, depth: number) {
-  const group = new THREE.Group();
-  const soil = box([width, 0.16, depth], standard(0x5a3827, 0.98), [0, 0.08, 0]);
-  group.add(soil);
-  const colors = [0xff5d8f, 0xffc857, 0x8f6bff, 0xf45d48, 0x49c6e5];
-  for (let ix = -2; ix <= 2; ix += 1) {
-    for (let iz = -1; iz <= 1; iz += 1) {
-      const stem = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.018, 0.024, 0.25, 7),
-        standard(0x3d7d3e, 0.92),
-      );
-      stem.position.set((ix / 5) * width * 0.8, 0.22, (iz / 3) * depth * 0.65);
-      const flower = new THREE.Mesh(
-        new THREE.SphereGeometry(0.09, 10, 8),
-        standard(colors[(ix + iz + 7) % colors.length], 0.62),
-      );
-      flower.position.copy(stem.position).add(new THREE.Vector3(0, 0.17, 0));
-      group.add(stem, flower);
-    }
-  }
-  return group;
-}
-
-function makePool(width: number, depth: number) {
-  const group = new THREE.Group();
-  const deck = box([width + 1.2, 0.16, depth + 1.2], standard(0xc7b49a, 0.78), [0, 0.08, 0]);
-  group.add(deck);
-  const basin = box([width, 0.34, depth], standard(0x2d89b8, 0.28), [0, 0.05, 0]);
-  group.add(basin);
-  const water = new THREE.Mesh(
-    new THREE.PlaneGeometry(width * 0.94, depth * 0.94),
-    new THREE.MeshPhysicalMaterial({
-      color: 0x28b8e3,
-      roughness: 0.08,
-      metalness: 0,
-      transmission: 0.22,
-      transparent: true,
-      opacity: 0.83,
-      clearcoat: 1,
-      clearcoatRoughness: 0.08,
-    }),
-  );
-  water.rotation.x = -Math.PI / 2;
-  water.position.y = 0.24;
-  water.receiveShadow = true;
-  group.add(water);
-
-  for (const side of [-1, 1]) {
-    const lounger = box([0.78, 0.1, 1.8], standard(0xf8ead8, 0.62), [side * (width * 0.63), 0.28, 0]);
-    lounger.rotation.z = side * -0.08;
-    group.add(lounger);
-  }
-  return group;
-}
-
-function makeInterior(width: number, depth: number, baseY: number, features: ExperienceFeature[]) {
+function makeFlowerStrip(width: number) {
   const root = new THREE.Group();
-  root.name = "furnished-show-flat";
-
-  const floorMat = standard(0xd9c4a8, 0.54);
-  const wallMat = standard(0xf6f1e7, 0.82);
-  const accent = standard(0x6a4735, 0.55);
-  const dark = standard(0x27333d, 0.48, 0.12);
-  const fabric = standard(0x4477aa, 0.82);
-  const cream = standard(0xeadcca, 0.86);
-
-  const floor = box([width, 0.16, depth], floorMat, [0, baseY, 0]);
-  root.add(floor);
-
-  // Partial perimeter walls keep the interior visible from the camera.
-  root.add(
-    box([width, 2.8, 0.16], wallMat, [0, baseY + 1.4, -depth / 2]),
-    box([0.16, 2.8, depth], wallMat, [-width / 2, baseY + 1.4, 0]),
-    box([width * 0.44, 2.8, 0.16], wallMat, [width * 0.28, baseY + 1.4, depth / 2]),
-  );
-
-  const livingX = -width * 0.2;
-  const bedroomX = width * 0.24;
-
-  // Living room.
-  const sofa = box([width * 0.34, 0.55, 1.0], fabric, [livingX, baseY + 0.36, depth * 0.1]);
-  tagFeature(features, sofa, "living", "Living Room", "Interior", "Furnished living room with sofa, TV and coffee table.");
-  root.add(sofa);
-  const sofaBack = box([width * 0.34, 0.75, 0.18], fabric, [livingX, baseY + 0.75, depth * 0.46]);
-  root.add(sofaBack);
-  const coffee = box([1.25, 0.28, 0.72], accent, [livingX, baseY + 0.22, -depth * 0.13]);
-  root.add(coffee);
-  const tv = box([1.85, 1.0, 0.1], dark, [livingX, baseY + 1.25, -depth / 2 + 0.12]);
-  root.add(tv);
-
-  // Bedroom.
-  const bedBase = box([2.5, 0.34, 2.0], accent, [bedroomX, baseY + 0.25, depth * 0.05]);
-  tagFeature(features, bedBase, "bedroom", "Bedroom", "Interior", "Bedroom visualization with bed, pillows and wardrobe.");
-  root.add(bedBase);
-  const mattress = box([2.34, 0.28, 1.84], cream, [bedroomX, baseY + 0.56, depth * 0.05]);
-  root.add(mattress);
-  for (const side of [-1, 1]) {
-    const pillow = box([0.78, 0.2, 0.46], standard(0xffffff, 0.92), [bedroomX + side * 0.58, baseY + 0.79, depth * 0.49]);
-    root.add(pillow);
+  root.add(box([width, 0.16, 0.55], standard(0x5b3a28, 0.96), [0, 0.08, 0]));
+  const colors = [0xea4f73, 0xf6c54b, 0xf07c49, 0xbf5ce8, 0xffffff];
+  for (let i = 0; i < 18; i += 1) {
+    const x = -width * 0.47 + (width * 0.94 * i) / 17;
+    const flower = new THREE.Mesh(
+      new THREE.SphereGeometry(0.075, 8, 7),
+      standard(colors[i % colors.length], 0.7),
+    );
+    flower.position.set(x, 0.26 + (i % 2) * 0.025, ((i % 3) - 1) * 0.12);
+    root.add(flower);
   }
-  const wardrobe = box([1.55, 2.2, 0.55], accent, [width / 2 - 0.9, baseY + 1.18, -depth * 0.32]);
-  root.add(wardrobe);
-
-  // Kitchen.
-  const kitchenZ = -depth * 0.28;
-  const kitchenBase = box([2.5, 0.9, 0.62], standard(0xf1eee7, 0.65), [-width * 0.26, baseY + 0.52, kitchenZ]);
-  tagFeature(features, kitchenBase, "kitchen", "Kitchen", "Interior", "Modular kitchen visualization with counter and tall storage.");
-  root.add(
-    kitchenBase,
-    box([2.5, 0.08, 0.7], dark, [-width * 0.26, baseY + 1.0, kitchenZ]),
-    box([1.45, 1.8, 0.58], standard(0xe8e5dc, 0.62), [-width / 2 + 0.82, baseY + 1.0, kitchenZ]),
-  );
-
-  // Dining.
-  const dining = box([1.55, 0.12, 1.0], accent, [0, baseY + 0.78, depth * 0.32]);
-  tagFeature(features, dining, "dining", "Dining Area", "Interior", "Dining table and seating area.");
-  root.add(dining);
-  for (const [x, z] of [[-0.95, 0], [0.95, 0], [0, -0.72], [0, 0.72]] as Array<[number, number]>) {
-    const chair = box([0.48, 0.7, 0.48], standard(0xc48f65, 0.72), [x, baseY + 0.38, depth * 0.32 + z]);
-    root.add(chair);
-  }
-
-  // Bathroom zone.
-  const bathX = width * 0.32;
-  const bathZ = -depth * 0.35;
-  const bath = box([1.15, 0.55, 0.65], standard(0xf5f7f8, 0.4), [bathX, baseY + 0.35, bathZ]);
-  tagFeature(features, bath, "bathroom", "Bathroom", "Interior", "Bathroom zone visualization with sanitary fixtures.");
-  root.add(
-    bath,
-    box([0.65, 0.9, 0.65], standard(0xffffff, 0.4), [bathX + 0.95, baseY + 0.48, bathZ]),
-  );
-
-  // Balcony deck + railing.
-  const balconyZ = depth / 2 + 0.8;
-  root.add(box([width * 0.55, 0.16, 1.45], standard(0xa27b58, 0.72), [width * 0.08, baseY, balconyZ]));
-  const rail = new THREE.MeshPhysicalMaterial({
-    color: 0x8fc7dd,
-    roughness: 0.16,
-    transmission: 0.18,
-    transparent: true,
-    opacity: 0.72,
-  });
-  const balconyRail = box([width * 0.55, 0.8, 0.06], rail, [width * 0.08, baseY + 0.46, balconyZ + 0.68]);
-  tagFeature(features, balconyRail, "interior-balcony", "Balcony", "Interior", "Glass-railing balcony connected to the furnished show flat.");
-  root.add(balconyRail);
-
-  // Warm ceiling lights.
-  const lightMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffe4b5,
-    emissive: 0xff9b3d,
-    emissiveIntensity: 3.2,
-  });
-  for (const [x, z] of [[-2.1, 0.5], [0, 0.4], [2.0, 0.2], [-1.5, -1.4], [1.7, -1.3]] as Array<[number, number]>) {
-    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), lightMaterial);
-    bulb.position.set(x, baseY + 2.58, z);
-    root.add(bulb);
-  }
-
   return root;
 }
 
-function makeTerrace(width: number, depth: number, baseY: number, features: ExperienceFeature[]) {
+function makeRoad(width: number, depth: number) {
+  const group = new THREE.Group();
+  const asphalt = box([width, 0.09, depth], standard(0x26282b, 0.98), [0, 0.045, 0]);
+  group.add(asphalt);
+
+  const markingMat = standard(0xf1eee4, 0.78);
+  for (let x = -width * 0.4; x <= width * 0.4; x += Math.max(width * 0.12, 2.4)) {
+    const stripe = box([Math.max(width * 0.055, 1.2), 0.015, 0.08], markingMat, [x, 0.1, 0]);
+    group.add(stripe);
+  }
+  return group;
+}
+
+function makeGate(width: number, height: number) {
   const root = new THREE.Group();
-  const deck = box([width, 0.18, depth], standard(0xb8946d, 0.78), [0, baseY, 0]);
-  tagFeature(features, deck, "terrace", "Roof Terrace", "Roof", "Usable terrace visualization with pergola, seating and planters.");
+  const metal = standard(0x55483f, 0.38, 0.34);
+  for (const side of [-1, 1]) {
+    const panel = box([width * 0.47, height, 0.1], metal, [side * width * 0.245, height / 2, 0]);
+    root.add(panel);
+    for (let i = -3; i <= 3; i += 1) {
+      root.add(
+        box(
+          [0.035, height * 0.76, 0.03],
+          standard(0xc5a67b, 0.38, 0.42),
+          [side * width * 0.245 + i * width * 0.055, height * 0.52, 0.07],
+        ),
+      );
+    }
+  }
+  return root;
+}
+
+function addLowRoom(
+  root: THREE.Object3D,
+  features: ExperienceFeature[],
+  id: string,
+  label: string,
+  unit: string,
+  size: [number, number],
+  pos: [number, number],
+  floorMat: THREE.Material,
+  description: string,
+  wallHeight = 0.55,
+) {
+  const [w, d] = size;
+  const [x, z] = pos;
+  const group = new THREE.Group();
+  const floor = box([w, 0.12, d], floorMat, [x, 0.06, z]);
+  tagFeature(features, floor, id, label, `Flat ${unit}`, description);
+  group.add(floor);
+
+  const wallMat = standard(0xe8e5de, 0.86);
+  group.add(
+    box([w, wallHeight, 0.12], wallMat, [x, wallHeight / 2, z - d / 2]),
+    box([w, wallHeight, 0.12], wallMat, [x, wallHeight / 2, z + d / 2]),
+    box([0.12, wallHeight, d], wallMat, [x - w / 2, wallHeight / 2, z]),
+    box([0.12, wallHeight, d], wallMat, [x + w / 2, wallHeight / 2, z]),
+  );
+  root.add(group);
+  return { root: group, x, z, w, d };
+}
+
+function addBed(root: THREE.Object3D, x: number, z: number, rotate = 0) {
+  const group = new THREE.Group();
+  const wood = standard(0x6f503d, 0.58);
+  const linen = standard(0xf4eee7, 0.88);
+  const accent = standard(0xb47a82, 0.86);
+  group.add(
+    box([1.75, 0.25, 2.0], wood, [0, 0.18, 0]),
+    box([1.62, 0.22, 1.86], linen, [0, 0.42, 0]),
+    box([1.62, 0.07, 0.62], accent, [0, 0.56, -0.15]),
+    box([0.64, 0.16, 0.38], linen, [-0.42, 0.62, 0.58]),
+    box([0.64, 0.16, 0.38], linen, [0.42, 0.62, 0.58]),
+  );
+  group.position.set(x, 0, z);
+  group.rotation.y = rotate;
+  root.add(group);
+}
+
+function addSofa(root: THREE.Object3D, x: number, z: number, width: number, rotate = 0) {
+  const group = new THREE.Group();
+  const fabric = standard(0xc8b5a0, 0.88);
+  group.add(
+    box([width, 0.42, 0.75], fabric, [0, 0.26, 0]),
+    box([width, 0.52, 0.16], fabric, [0, 0.58, 0.28]),
+    box([0.18, 0.52, 0.72], fabric, [-width / 2 + 0.09, 0.48, 0]),
+    box([0.18, 0.52, 0.72], fabric, [width / 2 - 0.09, 0.48, 0]),
+  );
+  group.position.set(x, 0, z);
+  group.rotation.y = rotate;
+  root.add(group);
+}
+
+function addKitchen(root: THREE.Object3D, x: number, z: number, width: number, rotate = 0) {
+  const group = new THREE.Group();
+  const cabinet = standard(0x805d43, 0.58);
+  const counter = standard(0x2e3032, 0.28);
+  group.add(
+    box([width, 0.82, 0.55], cabinet, [0, 0.44, 0]),
+    box([width, 0.08, 0.62], counter, [0, 0.89, 0]),
+  );
+  for (const off of [-width * 0.25, width * 0.22]) {
+    const sink = box([0.5, 0.025, 0.34], standard(0xc4c9cc, 0.2, 0.45), [off, 0.94, 0]);
+    group.add(sink);
+  }
+  group.position.set(x, 0, z);
+  group.rotation.y = rotate;
+  root.add(group);
+}
+
+function addDining(root: THREE.Object3D, x: number, z: number, rotate = 0) {
+  const group = new THREE.Group();
+  const wood = standard(0x9a6d4d, 0.58);
+  group.add(box([1.15, 0.12, 0.72], wood, [0, 0.66, 0]));
+  for (const [cx, cz] of [[-0.72, 0], [0.72, 0], [0, -0.52], [0, 0.52]] as Array<[number, number]>) {
+    group.add(box([0.38, 0.58, 0.38], standard(0xc2a17f, 0.78), [cx, 0.3, cz]));
+  }
+  group.position.set(x, 0, z);
+  group.rotation.y = rotate;
+  root.add(group);
+}
+
+function addToilet(root: THREE.Object3D, x: number, z: number, rotate = 0) {
+  const group = new THREE.Group();
+  const porcelain = standard(0xf4f6f5, 0.32);
+  const toilet = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.32, 0.48, 16), porcelain);
+  toilet.position.set(0.2, 0.27, 0);
+  group.add(toilet);
+  group.add(box([0.42, 0.18, 0.34], porcelain, [-0.35, 0.46, 0]));
+  group.position.set(x, 0, z);
+  group.rotation.y = rotate;
+  root.add(group);
+}
+
+function addBalcony(
+  root: THREE.Object3D,
+  features: ExperienceFeature[],
+  id: string,
+  label: string,
+  unit: string,
+  size: [number, number],
+  pos: [number, number],
+) {
+  const [w, d] = size;
+  const [x, z] = pos;
+  const deck = box([w, 0.12, d], standard(0xc8b392, 0.72), [x, 0.06, z]);
+  tagFeature(features, deck, id, label, `Flat ${unit}`, `${label} shown from the brochure-backed unit layout.`);
   root.add(deck);
+  const rail = glass(0xa9cfdd, 0.66);
+  root.add(box([w, 0.66, 0.055], rail, [x, 0.38, z + d / 2]));
+}
 
-  const pergolaMaterial = standard(0x5b3f31, 0.62);
-  for (const x of [-width * 0.32, width * 0.32]) {
-    for (const z of [-depth * 0.32, depth * 0.32]) {
-      root.add(box([0.16, 2.2, 0.16], pergolaMaterial, [x, baseY + 1.1, z]));
+function makeBrochureTypicalFloor(features: ExperienceFeature[]) {
+  const root = new THREE.Group();
+  root.name = "brochure-backed-typical-floor";
+
+  const cream = standard(0xe6dfd1, 0.62);
+  const bath = standard(0x73777b, 0.7);
+  const kitchenFloor = standard(0xd3c7b2, 0.7);
+  const lobbyFloor = standard(0xdad4c9, 0.72);
+
+  // FLAT 101 - brochure: Living 4.954x3.050, Kitchen 3.279x2.196,
+  // Dining 1.265x1.023, bedrooms 3.679x3.153 and 3.500x3.701.
+  addLowRoom(root, features, "101-living", "Living 4.954 x 3.050", "101-501", [4.95, 3.05], [-3.25, 0.6], cream, "Brochure-backed Flat 101-501 living room.");
+  addLowRoom(root, features, "101-kitchen", "Kitchen 3.279 x 2.196", "101-501", [3.28, 2.2], [-4.25, 3.18], kitchenFloor, "Brochure-backed modular kitchen.");
+  addLowRoom(root, features, "101-dining", "Dining 1.265 x 1.023", "101-501", [1.27, 1.03], [-1.78, 3.12], cream, "Brochure-backed dining space.");
+  addLowRoom(root, features, "101-bed-a", "Bed Room 3.679 x 3.153", "101-501", [3.68, 3.15], [-4.15, 5.92], cream, "Brochure-backed bedroom.");
+  addLowRoom(root, features, "101-bed-b", "Bed Room 3.500 x 3.701", "101-501", [3.5, 3.7], [-0.65, 6.05], cream, "Brochure-backed bedroom.");
+  addLowRoom(root, features, "101-toilet-a", "Toilet 1.20 x 2.13", "101-501", [1.2, 2.13], [-1.25, 4.25], bath, "Brochure-backed toilet.");
+  addLowRoom(root, features, "101-toilet-b", "Toilet 2.542 x 1.565", "101-501", [2.54, 1.57], [-4.45, 8.35], bath, "Brochure-backed toilet.");
+  addBalcony(root, features, "101-balcony", "Balcony 1.416", "101-501", [1.42, 2.85], [-6.45, 0.72]);
+  addBalcony(root, features, "101-wbal", "W. Bal 1.085", "101-501", [1.09, 2.0], [-6.38, 3.33]);
+
+  addSofa(root, -3.05, 0.4, 2.35, 0);
+  addKitchen(root, -4.45, 3.1, 2.65, 0);
+  addDining(root, -1.8, 3.1);
+  addBed(root, -4.25, 5.95, 0);
+  addBed(root, -0.7, 6.05, 0);
+  addToilet(root, -1.25, 4.25);
+  addToilet(root, -4.45, 8.35);
+
+  // FLAT 102 - brochure: Living 4.828x3.050, Kitchen 3.416x2.155,
+  // Dining 1.415x1.023, toilet 1.30x2.132. Mirrored around the central duct.
+  addLowRoom(root, features, "102-living", "Living 4.828 x 3.050", "102-502", [4.83, 3.05], [3.25, 0.6], cream, "Brochure-backed Flat 102-502 living room.");
+  addLowRoom(root, features, "102-kitchen", "Kitchen 3.416 x 2.155", "102-502", [3.42, 2.16], [4.25, 3.2], kitchenFloor, "Brochure-backed modular kitchen.");
+  addLowRoom(root, features, "102-dining", "Dining 1.415 x 1.023", "102-502", [1.42, 1.03], [1.73, 3.12], cream, "Brochure-backed dining space.");
+  addLowRoom(root, features, "102-bed-a", "Bed Room", "102-502", [3.45, 3.25], [4.22, 5.95], cream, "Bedroom placement follows the supplied floor-plan render.");
+  addLowRoom(root, features, "102-bed-b", "Bed Room", "102-502", [3.55, 3.4], [0.78, 6.03], cream, "Bedroom placement follows the supplied floor-plan render.");
+  addLowRoom(root, features, "102-toilet", "Toilet 1.30 x 2.132", "102-502", [1.3, 2.13], [1.28, 4.28], bath, "Brochure-backed toilet.");
+  addBalcony(root, features, "102-balcony", "Balcony 1.40", "102-502", [1.4, 2.82], [6.3, 0.7]);
+  addBalcony(root, features, "102-wbal", "W. Bal 1.140", "102-502", [1.14, 2.0], [6.28, 3.28]);
+
+  addSofa(root, 3.08, 0.4, 2.3, Math.PI);
+  addKitchen(root, 4.45, 3.12, 2.7, Math.PI);
+  addDining(root, 1.72, 3.1);
+  addBed(root, 4.25, 5.95, Math.PI);
+  addBed(root, 0.8, 6.05, Math.PI);
+  addToilet(root, 1.28, 4.28, Math.PI);
+
+  // Shared duct between 101/102.
+  addLowRoom(root, features, "duct", "DUCT 1.80 x 3.96", "Common", [1.8, 3.96], [0, 3.95], standard(0x9a9c9e, 0.92), "Central service duct shown on the supplied typical floor plan.");
+
+  // Common lobby and stair block.
+  addLowRoom(root, features, "lobby", "Lobby", "Common", [4.6, 2.1], [-0.25, -2.15], lobbyFloor, "Common lobby linking the three flats, staircase and fire lift.");
+  const stair = new THREE.Group();
+  for (let i = 0; i < 8; i += 1) {
+    stair.add(box([2.15, 0.12 + i * 0.04, 0.33], standard(0x666b70, 0.74), [-3.3, 0.08 + i * 0.04, -3.1 + i * 0.33]));
+  }
+  const stairPick = box([2.35, 0.1, 2.8], new THREE.MeshBasicMaterial({ visible: false }), [-3.3, 0.05, -2.0]);
+  tagFeature(features, stairPick, "stair", "Staircase", "Common", "Common staircase shown on the brochure floor plan.");
+  stair.add(stairPick);
+  root.add(stair);
+
+  addLowRoom(root, features, "fire-lift", "Fire Lift 1.60 x 1.80", "Common", [1.6, 1.8], [2.35, -2.25], standard(0xb7aea1, 0.68), "Fire lift shown on the supplied floor plan.");
+  addLowRoom(root, features, "common-toilet", "Toilet 1.20 x 1.80", "Common", [1.2, 1.8], [4.0, -2.2], bath, "Common toilet beside the fire lift.");
+
+  // FLAT 103 - brochure: Living 5.366x3.000, Kitchen 3.640x2.061,
+  // Bedrooms 3.313x3.146 and 3.130x3.830, toilet 1.900x1.313.
+  addLowRoom(root, features, "103-living", "Living 5.366 x 3.000", "103-403", [5.37, 3.0], [-0.5, -5.0], cream, "Brochure-backed Flat 103-403 living room.");
+  addLowRoom(root, features, "103-kitchen", "Kitchen 3.640 x 2.061", "103-403", [3.64, 2.06], [-2.3, -7.72], kitchenFloor, "Brochure-backed modular kitchen.");
+  addLowRoom(root, features, "103-bed-a", "Bed Room 3.313 x 3.146", "103-403", [3.31, 3.15], [3.55, -4.8], cream, "Brochure-backed bedroom.");
+  addLowRoom(root, features, "103-bed-b", "Bed Room 3.130 x 3.830", "103-403", [3.13, 3.83], [3.45, -8.25], cream, "Brochure-backed bedroom.");
+  addLowRoom(root, features, "103-toilet", "Toilet 1.900 x 1.313", "103-403", [1.9, 1.31], [0.55, -7.62], bath, "Brochure-backed toilet.");
+  addBalcony(root, features, "103-balcony-side", "Balcony 1.460", "103-403", [1.46, 2.9], [-4.65, -5.0]);
+  addBalcony(root, features, "103-wbal", "W. Bal 1.350", "103-403", [3.0, 1.35], [-2.25, -9.2]);
+  addBalcony(root, features, "103-balcony", "Balcony 1.350", "103-403", [1.35, 1.35], [0.55, -9.2]);
+
+  addSofa(root, -0.75, -5.0, 2.5, Math.PI / 2);
+  addKitchen(root, -2.35, -7.75, 3.0, 0);
+  addBed(root, 3.55, -4.8, Math.PI / 2);
+  addBed(root, 3.45, -8.25, Math.PI / 2);
+  addToilet(root, 0.55, -7.62);
+
+  // Visual central axis / floor foundation.
+  const overall = box([14.4, 0.05, 20.0], standard(0xcfc9be, 0.92), [0, -0.025, -0.6]);
+  overall.renderOrder = -1;
+  root.add(overall);
+
+  return root;
+}
+
+function makeRoofOverlay(bounds: THREE.Box3, features: ExperienceFeature[]) {
+  const root = new THREE.Group();
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+  const y = bounds.max.y + Math.max(size.y * 0.004, 0.06);
+  const roof = box(
+    [size.x * 0.88, 0.08, size.z * 0.84],
+    standard(0xdad7d0, 0.82),
+    [center.x, y, center.z],
+  );
+  tagFeature(features, roof, "roof", "Roof / Terrace", "Building", "Source-faithful roof inspection. No recreational roof amenity is claimed by the supplied brochure.");
+  root.add(roof);
+
+  const glow = new THREE.MeshStandardMaterial({
+    color: 0xffdfb0,
+    emissive: 0xff9f4a,
+    emissiveIntensity: 4.2,
+    roughness: 0.35,
+  });
+  root.add(
+    box([size.x * 0.72, 0.035, 0.035], glow, [center.x, y + 0.09, center.z + size.z * 0.39]),
+    box([0.035, 0.035, size.z * 0.55], glow, [center.x + size.x * 0.42, y + 0.09, center.z + size.z * 0.06]),
+  );
+  return root;
+}
+
+function addFacadeWarmLights(root: THREE.Object3D, bounds: THREE.Box3) {
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+  const lightMat = new THREE.MeshStandardMaterial({
+    color: 0xffe4bb,
+    emissive: 0xff9e48,
+    emissiveIntensity: 5,
+    roughness: 0.32,
+  });
+  const floors = [0.23, 0.36, 0.49, 0.62, 0.75, 0.88];
+  for (const ratio of floors) {
+    const y = bounds.min.y + size.y * ratio;
+    for (const xRatio of [-0.32, 0.02, 0.34]) {
+      const fixture = new THREE.Mesh(new THREE.SphereGeometry(Math.max(size.x * 0.008, 0.055), 10, 8), lightMat);
+      fixture.position.set(center.x + size.x * xRatio, y, bounds.max.z + Math.max(size.z * 0.012, 0.04));
+      root.add(fixture);
     }
   }
-  for (let i = -3; i <= 3; i += 1) {
-    root.add(box([width * 0.68, 0.12, 0.12], pergolaMaterial, [0, baseY + 2.18, i * 0.28]));
-  }
-
-  const seating = box([2.3, 0.48, 0.82], standard(0x2e6f83, 0.8), [0, baseY + 0.32, 0.55]);
-  root.add(seating);
-  const table = box([1.0, 0.34, 0.72], standard(0xe0b46d, 0.58), [0, baseY + 0.28, -0.55]);
-  root.add(table);
-
-  for (const x of [-width * 0.4, width * 0.4]) {
-    const planter = box([0.68, 0.52, 0.68], standard(0x8f5f44, 0.84), [x, baseY + 0.28, -depth * 0.28]);
-    root.add(planter);
-    const plant = makeTree(1.3);
-    plant.position.set(x, baseY + 0.46, -depth * 0.28);
-    root.add(plant);
-  }
-  return root;
 }
 
 function dispose(root: THREE.Object3D) {
@@ -285,7 +409,7 @@ function dispose(root: THREE.Object3D) {
 
 export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
   const root = new THREE.Group();
-  root.name = "interactive-project-experience";
+  root.name = "source-faithful-project-experience";
 
   const siteRoot = new THREE.Group();
   const interiorRoot = new THREE.Group();
@@ -299,64 +423,77 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
   const spanZ = Math.max(size.z, 10);
   const baseY = bounds.min.y - Math.max(size.y * 0.006, 0.04);
 
-  const plot = box([spanX * 2.05, 0.16, spanZ * 2.1], standard(0xbcae96, 0.92), [center.x, baseY - 0.08, center.z]);
-  addFeature(siteRoot, features, plot, "plot", "Project Plot", "Site", "The shaped project parcel around the building.");
+  // Source-faithful site: paved plot, road, low compound wall, gate and restrained front landscaping.
+  const plot = box([spanX * 1.68, 0.14, spanZ * 1.48], standard(0xb9b0a3, 0.9), [center.x, baseY - 0.06, center.z]);
+  addFeature(siteRoot, features, plot, "plot", "Project Plot", "Site", "Project parcel shown as a compact paved residential site around the building.");
 
-  const lawn = box([spanX * 1.75, 0.12, spanZ * 1.72], standard(0x4e8d48, 0.97), [center.x, baseY + 0.01, center.z]);
-  addFeature(siteRoot, features, lawn, "garden", "Garden", "Landscape", "Landscaped green area with trees, flowers and seating.");
+  const parking = box([spanX * 1.35, 0.09, spanZ * 0.58], standard(0x77716b, 0.9), [center.x, baseY + 0.02, center.z + spanZ * 0.18]);
+  addFeature(siteRoot, features, parking, "parking", "Car Parking", "Amenity", "Car Parking is explicitly listed in the supplied Jyoti Paradise brochure.");
 
-  const drive = box([spanX * 2.2, 0.08, Math.max(spanZ * 0.35, 4.8)], standard(0x2d3339, 0.96), [center.x, baseY + 0.06, bounds.max.z + spanZ * 0.55]);
-  addFeature(siteRoot, features, drive, "road", "Road & Entry", "Access", "Front approach road and project entrance.");
+  const road = makeRoad(spanX * 2.35, Math.max(spanZ * 0.42, 5.2));
+  road.position.set(center.x, baseY + 0.04, bounds.max.z + spanZ * 0.52);
+  addFeature(siteRoot, features, road, "road", "Front Road", "Site", "Road/approach context in front of the project.");
 
-  const pool = makePool(Math.max(spanX * 0.65, 5), Math.max(spanZ * 0.42, 3.4));
-  pool.position.set(bounds.max.x + spanX * 0.62, baseY + 0.1, center.z - spanZ * 0.05);
-  addFeature(siteRoot, features, pool, "pool", "Swimming Pool", "Amenity", "Colorful pool deck with water and lounge area.");
-
-  const flower = makeFlowerBed(Math.max(spanX * 0.72, 5), 1.25);
-  flower.position.set(center.x, baseY + 0.08, bounds.max.z + spanZ * 0.18);
-  addFeature(siteRoot, features, flower, "flowers", "Flower Garden", "Landscape", "Front landscaped flower bed.");
+  const flower = makeFlowerStrip(Math.max(spanX * 0.92, 6));
+  flower.position.set(center.x, baseY + 0.06, bounds.max.z + spanZ * 0.17);
+  addFeature(siteRoot, features, flower, "landscape", "Front Landscaping", "Shrubs and flower strip following the exterior render intent.");
 
   if (!mobile) {
-    for (const [px, pz, scale] of [
-      [-0.95, -0.7, 3.3],
-      [-0.9, 0.6, 2.8],
-      [0.95, -0.62, 3.0],
-      [1.05, 0.55, 2.6],
-      [-0.52, 0.92, 2.2],
-      [0.55, 0.92, 2.3],
+    for (const [xRatio, zRatio, h] of [
+      [-0.56, 0.46, 2.5],
+      [-0.32, 0.48, 2.15],
+      [-0.08, 0.49, 2.05],
+      [0.18, 0.48, 2.15],
+      [0.44, 0.45, 2.45],
+      [-0.72, -0.34, 3.15],
+      [0.72, -0.34, 3.1],
     ] as Array<[number, number, number]>) {
-      const tree = makeTree(scale);
-      tree.position.set(center.x + px * spanX, baseY + 0.06, center.z + pz * spanZ);
+      const tree = makeConifer(h);
+      tree.position.set(center.x + spanX * xRatio, baseY + 0.04, center.z + spanZ * zRatio);
       siteRoot.add(tree);
     }
   }
 
-  // Boundary wall with front opening.
-  const wallMaterial = standard(0xcab8a2, 0.84);
-  const sideWallDepth = spanZ * 2.06;
+  const boundaryMat = standard(0xb95d43, 0.9);
+  const capMat = standard(0xe8ded0, 0.78);
+  const wallH = 0.85;
+  const wallDepth = spanZ * 1.4;
+  for (const x of [center.x - spanX * 0.82, center.x + spanX * 0.82]) {
+    siteRoot.add(
+      box([0.18, wallH, wallDepth], boundaryMat, [x, baseY + wallH / 2, center.z - spanZ * 0.03]),
+      box([0.22, 0.09, wallDepth], capMat, [x, baseY + wallH + 0.045, center.z - spanZ * 0.03]),
+    );
+  }
   siteRoot.add(
-    box([0.22, 1.25, sideWallDepth], wallMaterial, [center.x - spanX, baseY + 0.62, center.z]),
-    box([0.22, 1.25, sideWallDepth], wallMaterial, [center.x + spanX, baseY + 0.62, center.z]),
-    box([spanX * 2.0, 1.25, 0.22], wallMaterial, [center.x, baseY + 0.62, center.z - spanZ]),
+    box([spanX * 1.64, wallH, 0.18], boundaryMat, [center.x, baseY + wallH / 2, center.z - spanZ * 0.73]),
+    box([spanX * 1.64, 0.09, 0.22], capMat, [center.x, baseY + wallH + 0.045, center.z - spanZ * 0.73]),
   );
 
-  const frontZ = center.z + spanZ;
+  const frontZ = center.z + spanZ * 0.70;
+  const gateWidth = Math.max(spanX * 0.46, 4.4);
+  const sideWidth = (spanX * 1.64 - gateWidth) / 2;
   siteRoot.add(
-    box([spanX * 0.62, 1.25, 0.22], wallMaterial, [center.x - spanX * 0.69, baseY + 0.62, frontZ]),
-    box([spanX * 0.62, 1.25, 0.22], wallMaterial, [center.x + spanX * 0.69, baseY + 0.62, frontZ]),
+    box([sideWidth, wallH, 0.18], boundaryMat, [center.x - gateWidth / 2 - sideWidth / 2, baseY + wallH / 2, frontZ]),
+    box([sideWidth, wallH, 0.18], boundaryMat, [center.x + gateWidth / 2 + sideWidth / 2, baseY + wallH / 2, frontZ]),
   );
-  const gate = box([spanX * 0.52, 1.6, 0.12], standard(0x493c35, 0.48, 0.26), [center.x, baseY + 0.8, frontZ]);
-  addFeature(siteRoot, features, gate, "gate", "Main Gate", "Access", "Main project entry gate.");
+  const gate = makeGate(gateWidth, 1.45);
+  gate.position.set(center.x, baseY, frontZ);
+  addFeature(siteRoot, features, gate, "gate", "Main Gate", "Site", "Decorative front gate matching the exterior-render treatment.");
 
-  const interiorWidth = Math.min(Math.max(spanX * 0.75, 7.2), 11.5);
-  const interiorDepth = Math.min(Math.max(spanZ * 0.7, 6.2), 9.2);
-  const interior = makeInterior(interiorWidth, interiorDepth, 0, features);
-  interior.position.set(center.x, baseY + 0.12, center.z);
+  addFacadeWarmLights(siteRoot, bounds);
+
+  const interior = makeBrochureTypicalFloor(features);
+  const floorScale = Math.min(
+    (spanX * 1.25) / 14.4,
+    (spanZ * 1.35) / 20.0,
+    1.15,
+  );
+  interior.scale.setScalar(floorScale);
+  interior.position.set(center.x, baseY + 0.14, center.z - spanZ * 0.02);
   interiorRoot.add(interior);
 
-  const terrace = makeTerrace(Math.max(spanX * 0.8, 7), Math.max(spanZ * 0.62, 5.2), 0, features);
-  terrace.position.set(center.x, bounds.max.y + 0.18, center.z);
-  terraceRoot.add(terrace);
+  const roof = makeRoofOverlay(bounds, features);
+  terraceRoot.add(roof);
 
   interiorRoot.visible = false;
   terraceRoot.visible = false;
@@ -373,8 +510,10 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
       siteRoot.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return;
         const material = Array.isArray(object.material) ? object.material[0] : object.material;
-        if (material instanceof THREE.MeshStandardMaterial) {
-          material.emissiveIntensity = night ? 0.16 : 0;
+        if (material instanceof THREE.MeshStandardMaterial && material.emissive) {
+          material.emissiveIntensity = night
+            ? Math.max(material.emissiveIntensity, 2.4)
+            : Math.min(material.emissiveIntensity, 0.8);
         }
       });
     },
