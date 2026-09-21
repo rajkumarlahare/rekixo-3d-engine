@@ -53,7 +53,7 @@ type PendingSettings = {
 
 const moduleOrder: Array<[Scene3DType, string]> = [
   ["project-navigation", "3D Building"],
-  ["site-map", "Location Map"],
+  ["wing-distance", "Location Map"],
   ["typical-floor", "Floor Explorer"],
   ["amenity", "Amenities"],
   ["section", "Section Cut"],
@@ -213,7 +213,7 @@ function TypicalFloor({ experience }: { experience: Public3DExperience }) {
 }
 
 function LocationMap({ experience }: { experience: Public3DExperience }) {
-  const settings = settingsOf<LocationSettings>(sceneOf(experience, "site-map"));
+  const settings = settingsOf<LocationSettings>(sceneOf(experience, "wing-distance"));
   const nearby = settings.nearby ?? [];
   const query = settings.mapQuery || [experience.project.name, experience.project.location].filter(Boolean).join(" ");
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
@@ -396,7 +396,7 @@ function App() {
 
       <div className="module-stage" key={activeType}>
         {activeType === "project-navigation" && <ProjectNavigation experience={experience} />}
-        {activeType === "site-map" && <LocationMap experience={experience} />}
+        {activeType === "wing-distance" && <LocationMap experience={experience} />}
         {activeType === "typical-floor" && <TypicalFloor experience={experience} />}
         {activeType === "amenity" && <Amenities experience={experience} />}
         {activeType === "section" && activeReady && (
