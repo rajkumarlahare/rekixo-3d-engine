@@ -14,12 +14,12 @@ test("viewer keeps one model session and animates presentation cameras", () => {
   assert.doesNotMatch(app, /key=\{viewerKey\}/);
 });
 
-test("architectural site environment is model-bounds driven", () => {
+test("architectural site environment adds no synthetic aerial backdrop geometry", () => {
   const environment = read("apps/public/src/viewer/siteEnvironment.ts");
   assert.match(environment, /createArchitecturalSiteEnvironment/);
-  assert.match(environment, /bounds\.getSize/);
-  assert.match(environment, /CircleGeometry/);
-  assert.doesNotMatch(environment, /generic green field/i);
+  assert.match(environment, /source-backed plot\/road\/boundary geometry/);
+  assert.doesNotMatch(environment, /CircleGeometry/);
+  assert.doesNotMatch(environment, /SphereGeometry/);
   assert.match(environment, /setNight/);
 });
 
