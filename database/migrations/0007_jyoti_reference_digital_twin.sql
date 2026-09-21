@@ -12,6 +12,6 @@ INSERT OR IGNORE INTO publish_versions_3d (
   'publish_jyoti_v5',
   'project_jyoti_paradise',
   5,
-  '{"phase":"reference-digital-twin-v1","referenceDirection":"premium-real-estate-sales-explorer","features":["full-screen-3d-stage","aerial-project-navigation","building-camera","exploded-floor-stack","single-floor-top-view","brochure-backed-unit-explorer","amenity-context","balcony-camera","distance-context"],"walkthrough":"secondary","scope":"rekixo-ar3d-engine+j yoti-only"}',
+  '{"phase":"reference-digital-twin-v1","referenceDirection":"premium-real-estate-sales-explorer","features":["full-screen-3d-stage","aerial-project-navigation","building-camera","exploded-floor-stack","single-floor-top-view","brochure-backed-unit-explorer","amenity-context","balcony-camera","distance-context"],"walkthrough":"secondary","scope":"rekixo-ar3d-engine+jyoti-only"}',
   datetime('now')
 );
