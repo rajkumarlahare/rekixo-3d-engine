@@ -43,7 +43,7 @@ const sourceMaterialTint: Record<string, number> = {
 
 // The FBX diffuse colors above remain the source-of-truth audit values.
 // This second layer is a presentation calibration derived from the supplied
-// Jyoti Paradise brochure/exterior render. It intentionally changes only the
+// supplied brochure/exterior render. It intentionally changes only the
 // web-viewer appearance so the live model reads like the approved warm facade
 // instead of a flat white/grey CAD viewport.
 const referenceFacadeTint: Record<string, number> = {
