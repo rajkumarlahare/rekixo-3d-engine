@@ -1,5 +1,6 @@
 const BASE_PATH = "/3Dprojects";
 const BUCKET_NAME = "rekixo-3d-assets";
+const PLATFORM_ENGINE_CONTRACT_VERSION = 1;
 
 const SECURITY_HEADERS = {
   "Referrer-Policy": "same-origin",
@@ -67,6 +68,46 @@ async function listProjects(env) {
     sceneCount: Number(project.scene_count || 0),
     enabledSceneCount: Number(project.enabled_scene_count || 0),
   }));
+}
+
+async function getIntegrationProject(env, slug) {
+  const project = await env.DB.prepare(
+    `SELECT p.id, p.slug, p.name, p.location, p.status, p.cover_asset_key,
+            COUNT(DISTINCT CASE WHEN s.enabled = 1 THEN s.id END) AS enabled_scene_count,
+            MAX(CASE WHEN m.is_active = 1 THEN 1 ELSE 0 END) AS has_active_model
+       FROM projects_3d p
+       LEFT JOIN scenes_3d s ON s.project_id = p.id
+       LEFT JOIN models_3d m ON m.project_id = p.id
+      WHERE p.slug = ?
+      GROUP BY p.id, p.slug, p.name, p.location, p.status, p.cover_asset_key
+      LIMIT 1`,
+  ).bind(slug).first();
+
+  if (!project) return null;
+
+  let activeModelAvailable = false;
+  if (project.has_active_model) {
+    const model = await env.DB.prepare(
+      `SELECT asset_key FROM models_3d
+        WHERE project_id=? AND is_active=1
+        ORDER BY version DESC LIMIT 1`,
+    ).bind(project.id).first();
+    if (model?.asset_key) activeModelAvailable = Boolean(await env.MODEL_ASSETS.head(model.asset_key));
+  }
+
+  return {
+    contractVersion: PLATFORM_ENGINE_CONTRACT_VERSION,
+    project: {
+      id: project.id,
+      slug: project.slug,
+      name: project.name,
+      location: project.location ?? undefined,
+      status: project.status,
+      coverAssetKey: project.cover_asset_key ?? undefined,
+    },
+    enabledSceneCount: Number(project.enabled_scene_count || 0),
+    activeModelAvailable,
+  };
 }
 
 async function getProjectStatus(env, slug) {
@@ -173,6 +214,23 @@ export default {
         return json({ error: "Method not allowed." }, { status: 405 });
       }
       return json({ projects: await listProjects(env) });
+    }
+
+    if (url.pathname.startsWith(`${BASE_PATH}/api/integration/projects/`)) {
+      if (request.method !== "GET") {
+        return json({ error: "Method not allowed." }, { status: 405 });
+      }
+      const slug = decodeURIComponent(
+        url.pathname.slice(`${BASE_PATH}/api/integration/projects/`.length),
+      ).trim().toLowerCase();
+      if (!slug || slug.includes("/")) {
+        return json({ error: "Valid project slug is required." }, { status: 400 });
+      }
+      const integration = await getIntegrationProject(env, slug);
+      if (!integration) return json({ error: "3D project not found." }, { status: 404 });
+      return json(integration, {
+        headers: { "x-rekixo-ar3d-contract": String(PLATFORM_ENGINE_CONTRACT_VERSION) },
+      });
     }
 
     if (url.pathname === `${BASE_PATH}/api/status`) {

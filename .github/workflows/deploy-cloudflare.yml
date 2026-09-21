@@ -84,6 +84,19 @@ jobs:
           grep -Fq '"projects":[' /tmp/engine-projects.json
           echo "Generic 3D project registry verified."
 
+      - name: Verify Platform integration contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          API_URL="https://admin.rekixo.com/3Dprojects/api/integration/projects/jyoti-paradise"
+          HEADERS="$(mktemp)"
+          STATUS="$(curl --location --silent --show-error --dump-header "$HEADERS" --output /tmp/engine-integration.json --write-out '%{http_code}' "$API_URL" || true)"
+          [ "$STATUS" = "200" ]
+          grep -Fqi 'x-rekixo-ar3d-contract: 1' "$HEADERS"
+          grep -Fq '"contractVersion":1' /tmp/engine-integration.json
+          grep -Fq '"slug":"jyoti-paradise"' /tmp/engine-integration.json
+          echo "Platform ↔ Engine contract v1 verified."
+
       # Jyoti Paradise is the existing live compatibility fixture, not an Engine default.
       - name: Verify legacy Jyoti public production fixture
         shell: bash

@@ -164,3 +164,16 @@ Privileged Engine writes require authenticated handoff before upload/edit/publis
 ## 11. Change-control rule
 
 Any patch that would couple the Engine to the AR3D Platform D1/R2 resources, `/admin` surface, or `/projects/*` route must stop and require an explicit architecture decision first.
+
+
+## 12. Platform integration contract v1
+
+The sibling Platform may validate Engine project identity through the read-only endpoint:
+
+`/3Dprojects/api/integration/projects/[slug]`
+
+This endpoint is deliberately narrow and versioned. It is not a shared database gateway and must not become a privileged mutation surface.
+
+The Platform owns link metadata. The Engine owns 3D project/model/scene/camera/asset data. Neither repository directly queries the other's D1 database.
+
+Stage 5 admin handoff transfers selected-project context only. No Platform password, cookie or session secret is accepted by the Engine. Privileged Engine write APIs remain disabled until a dedicated authenticated authorization layer is introduced.
