@@ -7,8 +7,7 @@ UPDATE models_3d
        mime_type = 'model/gltf-binary',
        byte_size = 4033620,
        version = 2,
-       is_active = 1,
-       updated_at = datetime('now')
+       is_active = 1
  WHERE id = 'model_jyoti_exterior_v1'
    AND project_id = 'project_jyoti_paradise';
 
