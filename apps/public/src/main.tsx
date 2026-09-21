@@ -356,13 +356,15 @@ function PendingModule({ type, experience }: { type: Scene3DType; experience: Pu
   );
 }
 
-type TwinMode = "project" | "building" | "floors" | "units" | "amenities" | "balcony" | "context";
+type TwinMode = "project" | "building" | "floors" | "units" | "interior" | "terrace" | "amenities" | "balcony" | "context";
 
 const twinModes: Array<{ id: TwinMode; label: string; short: string }> = [
   { id: "project", label: "Project Navigation", short: "Project" },
   { id: "building", label: "Building Explorer", short: "Building" },
   { id: "floors", label: "Floor Explorer", short: "Floors" },
   { id: "units", label: "Unit Explorer", short: "Units" },
+  { id: "interior", label: "Furnished Interior", short: "Interior" },
+  { id: "terrace", label: "Roof Terrace", short: "Terrace" },
   { id: "amenities", label: "Amenities", short: "Amenities" },
   { id: "balcony", label: "Balcony View", short: "Balcony" },
   { id: "context", label: "Distance & Context", short: "Context" },
@@ -376,6 +378,7 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
   const [mode, setMode] = useState<TwinMode>("project");
   const [floor, setFloor] = useState<number | null>(null);
   const [unit, setUnit] = useState<string>();
+  const [selectedFeature, setSelectedFeature] = useState<{ id: string; label: string; category: string; description: string }>();
   const units = floorSettings.units ?? [];
   const visibleUnits = floor === null
     ? []
@@ -392,6 +395,9 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
           ? "balcony"
           : "top";
 
+  const experienceMode =
+    mode === "interior" ? "interior" : mode === "terrace" ? "terrace" : "site";
+
   const viewerFloor = mode === "units" ? floor ?? 1 : mode === "floors" ? floor : null;
   const exploded = mode === "floors" && floor === null;
   const nearby = locationSettings.nearby ?? amenitySettings.nearby ?? [];
@@ -406,6 +412,8 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
           presentationView={presentationView}
           initialFloor={viewerFloor}
           initialExploded={exploded}
+          experienceMode={experienceMode}
+          onFeatureSelect={setSelectedFeature}
           compactUi
         />
 
@@ -430,6 +438,7 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
               className={mode === item.id ? "twin-rail-item twin-rail-item--active" : "twin-rail-item"}
               key={item.id}
               onClick={() => {
+                setSelectedFeature(undefined);
                 setMode(item.id);
                 if (item.id === "floors") {
                   setFloor(null);
@@ -452,7 +461,9 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
             {mode === "building" && "Inspect the building facade from a premium architectural camera."}
             {mode === "floors" && "Separate the building stack or focus a single verified floor."}
             {mode === "units" && "Select brochure-backed units on a floor without inventing geometry."}
-            {mode === "amenities" && "Review brochure-backed project amenities in project context."}
+            {mode === "interior" && "Explore a furnished 3D show-flat with living room, bedroom, kitchen, dining, bathroom and balcony. Click furniture and room elements for details."}
+            {mode === "terrace" && "Inspect the roof terrace with pergola, seating and planters."}
+            {mode === "amenities" && "Review brochure-backed project amenities and click the pool, garden, road, gate or plot in the 3D scene."}
             {mode === "balcony" && "Inspect the facade and balcony side from a dedicated viewing angle."}
             {mode === "context" && "Review brochure-listed connectivity and nearby destinations around the project."}
           </p>
@@ -565,6 +576,15 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
               This camera uses the verified exterior model. A true apartment-specific outward view
               will be bound only when the balcony/unit orientation is verified from source geometry.
             </p>
+          </aside>
+        )}
+
+        {selectedFeature && (
+          <aside className="twin-feature-card" role="status">
+            <button type="button" aria-label="Close selected feature" onClick={() => setSelectedFeature(undefined)}>×</button>
+            <span>{selectedFeature.category}</span>
+            <strong>{selectedFeature.label}</strong>
+            <p>{selectedFeature.description}</p>
           </aside>
         )}
 
