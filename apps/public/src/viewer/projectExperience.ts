@@ -465,166 +465,22 @@ function addFacadeWarmLights(root: THREE.Object3D, bounds: THREE.Box3, mobile: b
     }
   }
 
-  if (!mobile) {
-    for (const xRatio of [-0.3, 0.28]) {
-      const light = new THREE.PointLight(0xffb56d, 2.2, Math.max(size.x * 0.72, 10), 2);
-      light.position.set(
-        center.x + size.x * xRatio,
-        bounds.min.y + size.y * 0.48,
-        bounds.max.z + Math.max(size.z * 0.22, 1.4),
-      );
-      root.add(light);
-    }
+  for (const xRatio of [-0.28, 0.26]) {
+    const light = new THREE.PointLight(
+      0xffb56d,
+      mobile ? 0.82 : 1.55,
+      Math.max(size.x * 0.58, 8),
+      2,
+    );
+    light.position.set(
+      center.x + size.x * xRatio,
+      bounds.min.y + size.y * 0.50,
+      bounds.max.z + Math.max(size.z * 0.14, 0.95),
+    );
+    root.add(light);
   }
 }
 
-
-function addReferenceFacadeAccents(root: THREE.Object3D, bounds: THREE.Box3, mobile: boolean) {
-  const size = bounds.getSize(new THREE.Vector3());
-  const center = bounds.getCenter(new THREE.Vector3());
-  const frontZ = bounds.max.z + Math.max(size.z * 0.009, 0.035);
-  const sideX = bounds.max.x + Math.max(size.x * 0.009, 0.035);
-
-  const charcoal = standard(0x34383d, 0.46, 0.07);
-  const charcoalSoft = standard(0x4b5055, 0.5, 0.05);
-  const timber = standard(0x795445, 0.58, 0.03);
-  const mint = standard(0xa8b8ad, 0.76, 0.01);
-  const railGlass = glass(0xa9c2ca, 0.42);
-  const railMetal = standard(0x4b5358, 0.34, 0.42);
-  const warmLight = new THREE.MeshStandardMaterial({
-    color: 0xffe8ce,
-    emissive: 0xffa562,
-    emissiveIntensity: 3.4,
-    roughness: 0.32,
-  });
-
-  const addFrontFrame = (
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    thickness: number,
-  ) => {
-    const depth = Math.max(size.z * 0.018, 0.075);
-    root.add(
-      box([width, thickness, depth], charcoal, [x, y - height / 2, frontZ]),
-      box([width, thickness, depth], charcoal, [x, y + height / 2, frontZ]),
-      box([thickness, height, depth], charcoal, [x - width / 2, y, frontZ]),
-      box([thickness, height, depth], charcoal, [x + width / 2, y, frontZ]),
-    );
-  };
-
-  // Reference facade rhythm: stacked charcoal frames around the two principal
-  // balcony/window bays. These are a visual-calibration layer and do not alter
-  // the source FBX geometry.
-  const floorRatios = [0.29, 0.42, 0.55, 0.68, 0.81];
-  for (const ratio of floorRatios) {
-    const y = bounds.min.y + size.y * ratio;
-    const h = size.y * 0.105;
-    const t = Math.max(size.y * 0.012, 0.085);
-
-    addFrontFrame(center.x + size.x * 0.18, y, size.x * 0.34, h, t);
-    addFrontFrame(center.x - size.x * 0.24, y, size.x * 0.22, h * 0.9, t * 0.86);
-
-    // Glass balcony rail and dark lower fascia visible in the supplied render.
-    root.add(
-      box(
-        [size.x * 0.29, size.y * 0.033, Math.max(size.z * 0.012, 0.05)],
-        railGlass,
-        [center.x + size.x * 0.18, y - h * 0.23, frontZ + Math.max(size.z * 0.012, 0.04)],
-      ),
-      box(
-        [size.x * 0.33, Math.max(size.y * 0.012, 0.08), Math.max(size.z * 0.02, 0.08)],
-        charcoalSoft,
-        [center.x + size.x * 0.18, y - h * 0.53, frontZ],
-      ),
-    );
-
-    // Warm concealed strip under each balcony slab.
-    root.add(
-      box(
-        [size.x * 0.28, Math.max(size.y * 0.0022, 0.018), Math.max(size.z * 0.018, 0.06)],
-        warmLight,
-        [center.x + size.x * 0.18, y - h * 0.47, frontZ + Math.max(size.z * 0.018, 0.06)],
-      ),
-    );
-
-    // Vertical privacy fins at the right edge of the balcony stack.
-    const slatX = center.x + size.x * 0.355;
-    for (let i = -3; i <= 3; i += 1) {
-      root.add(
-        box(
-          [Math.max(size.x * 0.006, 0.035), h * 0.72, Math.max(size.z * 0.022, 0.08)],
-          railMetal,
-          [slatX + i * size.x * 0.009, y, frontZ + Math.max(size.z * 0.014, 0.05)],
-        ),
-      );
-    }
-  }
-
-  // Tall accent strips from the approved exterior reference.
-  root.add(
-    box(
-      [size.x * 0.075, size.y * 0.48, Math.max(size.z * 0.018, 0.07)],
-      mint,
-      [center.x - size.x * 0.43, bounds.min.y + size.y * 0.69, frontZ],
-    ),
-    box(
-      [size.x * 0.095, size.y * 0.62, Math.max(size.z * 0.02, 0.08)],
-      timber,
-      [center.x + size.x * 0.455, bounds.min.y + size.y * 0.61, frontZ],
-    ),
-  );
-
-  // Right-side return cladding and framed bands preserve the three-quarter
-  // composition when the user rotates around the building.
-  root.add(
-    box(
-      [Math.max(size.x * 0.018, 0.07), size.y * 0.60, size.z * 0.18],
-      timber,
-      [sideX, bounds.min.y + size.y * 0.60, center.z + size.z * 0.26],
-    ),
-  );
-  for (const ratio of floorRatios.slice(1)) {
-    const y = bounds.min.y + size.y * ratio;
-    root.add(
-      box(
-        [Math.max(size.x * 0.02, 0.08), Math.max(size.y * 0.012, 0.08), size.z * 0.34],
-        charcoal,
-        [sideX, y - size.y * 0.055, center.z + size.z * 0.12],
-      ),
-    );
-  }
-
-  // Roof crown: dark/wood fascia plus the thin warm perimeter line seen in
-  // the reference image instead of a bright floating outline.
-  const roofY = bounds.min.y + size.y * 0.93;
-  root.add(
-    box(
-      [size.x * 0.44, size.y * 0.11, Math.max(size.z * 0.02, 0.08)],
-      timber,
-      [center.x + size.x * 0.18, roofY, frontZ],
-    ),
-    box(
-      [size.x * 0.70, Math.max(size.y * 0.012, 0.08), Math.max(size.z * 0.025, 0.09)],
-      charcoal,
-      [center.x + size.x * 0.06, bounds.min.y + size.y * 0.865, frontZ],
-    ),
-    box(
-      [size.x * 0.65, Math.max(size.y * 0.0025, 0.02), Math.max(size.z * 0.025, 0.09)],
-      warmLight,
-      [center.x + size.x * 0.08, bounds.min.y + size.y * 0.895, frontZ + Math.max(size.z * 0.016, 0.055)],
-    ),
-  );
-
-  // Keep the mobile version detailed but bounded: the overlay uses only boxes
-  // and one shared material set, so it remains cheaper than extra model assets.
-  if (mobile) {
-    root.traverse((object) => {
-      if (object instanceof THREE.Mesh) object.castShadow = false;
-    });
-  }
-}
 
 function addBrickFacing(
   root: THREE.Object3D,
@@ -690,21 +546,28 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean, ref
 
   // Source-faithful site: paved plot, road, low compound wall, gate and restrained front landscaping.
   const plot = box(
-    [spanX * (referenceVisual ? 1.38 : 1.68), 0.14, spanZ * (referenceVisual ? 1.24 : 1.48)],
-    standard(referenceVisual ? 0xa69c92 : 0xc5bbae, 0.9),
+    [spanX * (referenceVisual ? 1.28 : 1.68), 0.14, spanZ * (referenceVisual ? 1.16 : 1.48)],
+    standard(referenceVisual ? 0x8f8983 : 0xc5bbae, 0.92),
     [center.x, baseY - 0.06, center.z],
   );
   addFeature(siteRoot, features, plot, "plot", "Project Plot", "Site", "Project parcel shown as a compact paved residential site around the building.");
 
   const parking = box(
-    [spanX * (referenceVisual ? 1.18 : 1.35), 0.09, spanZ * (referenceVisual ? 0.48 : 0.58)],
-    standard(referenceVisual ? 0x716c67 : 0x918a82, 0.88),
+    [spanX * (referenceVisual ? 1.06 : 1.35), 0.09, spanZ * (referenceVisual ? 0.38 : 0.58)],
+    standard(referenceVisual ? 0x625f5b : 0x918a82, 0.9),
     [center.x, baseY + 0.02, center.z + spanZ * 0.18],
   );
   addFeature(siteRoot, features, parking, "parking", "Car Parking", "Amenity", "Car Parking is explicitly listed in the supplied project brochure.");
 
-  const road = makeRoad(spanX * 2.35, Math.max(spanZ * 0.42, 5.2));
-  road.position.set(center.x, baseY + 0.04, bounds.max.z + spanZ * 0.52);
+  const road = makeRoad(
+    spanX * (referenceVisual ? 1.72 : 2.35),
+    Math.max(spanZ * (referenceVisual ? 0.30 : 0.42), referenceVisual ? 3.8 : 5.2),
+  );
+  road.position.set(
+    center.x,
+    baseY + 0.04,
+    bounds.max.z + spanZ * (referenceVisual ? 0.34 : 0.52),
+  );
   addFeature(siteRoot, features, road, "road", "Front Road", "Site", "Road/approach context in front of the project.");
 
   const flower = makeFlowerStrip(Math.max(spanX * 0.92, 6));
@@ -712,24 +575,7 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean, ref
   addFeature(siteRoot, features, flower, "landscape", "Front Landscaping", "Landscape", "Shrubs and flower strip following the exterior render intent.");
 
   const treeLayout: Array<[number, number, number]> = referenceVisual
-    ? (mobile
-        ? [
-            [-0.50, 0.48, 2.25],
-            [-0.22, 0.49, 1.95],
-            [0.08, 0.49, 1.9],
-            [0.36, 0.47, 2.2],
-            [0.63, -0.30, 2.75],
-          ]
-        : [
-            [-0.62, 0.47, 2.75],
-            [-0.42, 0.49, 2.35],
-            [-0.20, 0.50, 2.15],
-            [0.04, 0.50, 2.05],
-            [0.28, 0.49, 2.2],
-            [0.50, 0.46, 2.55],
-            [-0.76, -0.32, 3.25],
-            [0.73, -0.32, 3.15],
-          ])
+    ? []
     : (!mobile
         ? [
             [-0.56, 0.46, 2.5],
@@ -791,7 +637,6 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean, ref
       sideWidth * 0.98,
       wallH * 0.92,
     );
-    addReferenceFacadeAccents(siteRoot, bounds, mobile);
   }
 
   addFacadeWarmLights(siteRoot, bounds, mobile);
