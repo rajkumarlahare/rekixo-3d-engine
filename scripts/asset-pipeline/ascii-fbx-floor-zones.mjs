@@ -2,7 +2,7 @@ import fs from "node:fs";
 
 function parseNumberArray(block, key) {
   const expression = new RegExp(
-    String.raw`${key}:\\s*\\*(\\d+)\\s*\\{\\s*a:\\s*([^}]*)\\}`,
+    key + ":\\s*\\*(\\d+)\\s*\\{\\s*a:\\s*([^}]*)\\}",
     "s",
   );
   const match = block.match(expression);
