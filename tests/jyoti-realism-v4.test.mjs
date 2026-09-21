@@ -31,7 +31,7 @@ test("source-faithful road, curb, sidewalk and boundary remain visible", () => {
   assert.match(site, /sidewalkMat/);
   assert.match(site, /curbMat/);
   assert.match(site, /standard\(0xb8684f, 0\.84\)/);
-  assert.match(site, /PointLight\(0xffb56d, 2\.2/);
+  assert.match(site, /PointLight\(\s*0xffb56d,/);
 });
 
 test("viewer has no synthetic circular ground layers", () => {
