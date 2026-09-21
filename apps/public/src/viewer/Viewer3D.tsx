@@ -464,8 +464,9 @@ export function Viewer3D({
           ? applyPreset(cameraPreset, camera, controls)
           : fitCamera(object, camera, controls);
 
-      const sphere = modelBounds.getBoundingSphere(new THREE.Sphere());
-      const sizeForView = modelBounds.getSize(new THREE.Vector3());
+      const bounds = modelBounds;
+      const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+      const sizeForView = bounds.getSize(new THREE.Vector3());
       const centerForView = sphere.center.clone();
       const radiusForView = Math.max(sphere.radius, 1);
       const setView = (view: PresentationView) => {
@@ -479,16 +480,16 @@ export function Viewer3D({
           controls.target.copy(centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)));
           camera.fov = 36;
         } else if (view === "top") {
-          camera.position.set(centerForView.x, modelBounds.max.y + radiusForView * 1.55, centerForView.z + radiusForView * 0.06);
+          camera.position.set(centerForView.x, bounds.max.y + radiusForView * 1.55, centerForView.z + radiusForView * 0.06);
           controls.target.copy(centerForView);
           camera.fov = 34;
         } else if (view === "balcony") {
           camera.position.set(
-            modelBounds.max.x + radiusForView * 0.45,
-            modelBounds.min.y + sizeForView.y * 0.62,
-            modelBounds.max.z + radiusForView * 0.28,
+            bounds.max.x + radiusForView * 0.45,
+            bounds.min.y + sizeForView.y * 0.62,
+            bounds.max.z + radiusForView * 0.28,
           );
-          controls.target.set(centerForView.x, modelBounds.min.y + sizeForView.y * 0.52, centerForView.z);
+          controls.target.set(centerForView.x, bounds.min.y + sizeForView.y * 0.52, centerForView.z);
           camera.fov = 38;
         } else if (view === "context") {
           camera.position.set(
