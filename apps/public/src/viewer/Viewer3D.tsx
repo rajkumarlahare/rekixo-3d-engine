@@ -12,6 +12,7 @@ interface Viewer3DProps {
   modelUrl?: string;
   cameraPreset?: CameraPreset3D;
   modelLabel?: string;
+  interactionMode?: "section" | "detail";
 }
 
 interface HomeView {
@@ -171,13 +172,20 @@ export function Viewer3D({
   modelUrl,
   cameraPreset,
   modelLabel,
+  interactionMode,
 }: Viewer3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const resetRef = useRef<(() => void) | null>(null);
+  const floorRef = useRef<((floor: number | null) => void) | null>(null);
+  const sectionRef = useRef<((enabled: boolean) => void) | null>(null);
+  const lightingRef = useRef<((night: boolean) => void) | null>(null);
   const [mode, setMode] = useState<ViewerMode>("booting");
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
+  const [sectionEnabled, setSectionEnabled] = useState(interactionMode === "section");
+  const [nightMode, setNightMode] = useState(false);
 
   useEffect(() => {
     const candidate = hostRef.current;
@@ -193,6 +201,7 @@ export function Viewer3D({
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x07111d);
     scene.fog = new THREE.FogExp2(0x07111d, 0.018);
+    let modelBounds: THREE.Box3 | undefined;
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 2000);
     camera.position.set(8, 6, 9);
@@ -221,7 +230,8 @@ export function Viewer3D({
     controls.minPolarAngle = THREE.MathUtils.degToRad(18);
     controls.maxPolarAngle = THREE.MathUtils.degToRad(87);
 
-    scene.add(new THREE.HemisphereLight(0xdcecff, 0x27313b, 2.4));
+    const hemi = new THREE.HemisphereLight(0xdcecff, 0x27313b, 2.4);
+    scene.add(hemi);
 
     const sun = new THREE.DirectionalLight(0xfff4e5, 3.7);
     sun.position.set(8, 14, 10);
@@ -235,6 +245,10 @@ export function Viewer3D({
     const fill = new THREE.DirectionalLight(0x9cc9ff, 1.1);
     fill.position.set(-8, 6, -5);
     scene.add(fill);
+
+    const warmFill = new THREE.PointLight(0xffa35c, 0, 120, 1.5);
+    warmFill.position.set(0, 18, 18);
+    scene.add(warmFill);
 
     const groundMaterial = new THREE.MeshStandardMaterial({
       color: 0x0b1925,
@@ -273,6 +287,54 @@ export function Viewer3D({
     };
     resetRef.current = resetCamera;
 
+    const applyFloor = (floor: number | null) => {
+      if (!modelBounds) return;
+      if (floor === null) {
+        renderer.clippingPlanes = sectionEnabledRef.current ? renderer.clippingPlanes.filter((plane) => Math.abs(plane.normal.x) > 0.5) : [];
+        return;
+      }
+      const minY = modelBounds.min.y;
+      const height = Math.max(modelBounds.max.y - modelBounds.min.y, 1);
+      const lowerRatio = floor === 0 ? 0 : 0.12 + (floor - 1) * 0.132;
+      const upperRatio = floor === 0 ? 0.12 : 0.12 + floor * 0.132;
+      const lower = minY + height * lowerRatio;
+      const upper = minY + height * Math.min(upperRatio, 0.79);
+      const sectionPlanes = sectionEnabledRef.current
+        ? renderer.clippingPlanes.filter((plane) => Math.abs(plane.normal.x) > 0.5)
+        : [];
+      renderer.clippingPlanes = [
+        ...sectionPlanes,
+        new THREE.Plane(new THREE.Vector3(0, 1, 0), -lower),
+        new THREE.Plane(new THREE.Vector3(0, -1, 0), upper),
+      ];
+    };
+
+    const sectionEnabledRef = { current: interactionMode === "section" };
+
+    const applySection = (enabled: boolean) => {
+      sectionEnabledRef.current = enabled;
+      if (!modelBounds) return;
+      const centerX = (modelBounds.min.x + modelBounds.max.x) / 2;
+      const floorPlanes = renderer.clippingPlanes.filter((plane) => Math.abs(plane.normal.y) > 0.5);
+      renderer.clippingPlanes = enabled
+        ? [...floorPlanes, new THREE.Plane(new THREE.Vector3(-1, 0, 0), centerX)]
+        : floorPlanes;
+    };
+
+    const applyLighting = (night: boolean) => {
+      scene.background = new THREE.Color(night ? 0x020713 : 0x07111d);
+      scene.fog = new THREE.FogExp2(night ? 0x020713 : 0x07111d, night ? 0.012 : 0.018);
+      hemi.intensity = night ? 0.75 : 2.4;
+      sun.intensity = night ? 0.9 : 3.7;
+      fill.intensity = night ? 0.55 : 1.1;
+      warmFill.intensity = night ? 16 : 0;
+      renderer.toneMappingExposure = night ? 1.18 : 1.05;
+    };
+
+    floorRef.current = applyFloor;
+    sectionRef.current = applySection;
+    lightingRef.current = applyLighting;
+
     const mountObject = (object: THREE.Object3D, usePreset: boolean) => {
       if (activeObject) {
         scene.remove(activeObject);
@@ -280,10 +342,20 @@ export function Viewer3D({
       }
       activeObject = object;
       scene.add(object);
+      modelBounds = new THREE.Box3().setFromObject(object);
       homeView =
         usePreset && cameraPreset
           ? applyPreset(cameraPreset, camera, controls)
           : fitCamera(object, camera, controls);
+
+      if (interactionMode === "detail") {
+        const sphere = modelBounds.getBoundingSphere(new THREE.Sphere());
+        const direction = new THREE.Vector3(1, 0.25, 1).normalize();
+        camera.position.copy(sphere.center.clone().add(direction.multiplyScalar(Math.max(sphere.radius * 1.35, 4))));
+        controls.target.copy(sphere.center.clone().add(new THREE.Vector3(0, sphere.radius * 0.08, 0)));
+        controls.update();
+      }
+      if (interactionMode === "section") applySection(true);
     };
 
     const mountPreview = (message: string) => {
@@ -371,8 +443,11 @@ export function Viewer3D({
       renderer.forceContextLoss();
       renderer.domElement.remove();
       resetRef.current = null;
+      floorRef.current = null;
+      sectionRef.current = null;
+      lightingRef.current = null;
     };
-  }, [modelUrl, cameraPreset]);
+  }, [modelUrl, cameraPreset, interactionMode]);
 
   useEffect(() => {
     const update = () => {
@@ -416,16 +491,64 @@ export function Viewer3D({
             className="viewer-action"
             onClick={() => resetRef.current?.()}
           >
-            Reset view
+            Reset
+          </button>
+          <button
+            type="button"
+            className={nightMode ? "viewer-action viewer-action--active" : "viewer-action"}
+            onClick={() => {
+              const next = !nightMode;
+              setNightMode(next);
+              lightingRef.current?.(next);
+            }}
+          >
+            {nightMode ? "Day" : "Night"}
+          </button>
+          <button
+            type="button"
+            className={sectionEnabled ? "viewer-action viewer-action--active" : "viewer-action"}
+            onClick={() => {
+              const next = !sectionEnabled;
+              setSectionEnabled(next);
+              sectionRef.current?.(next);
+            }}
+          >
+            Section
           </button>
           <button
             type="button"
             className="viewer-action"
             onClick={() => void toggleFullscreen()}
           >
-            {isFullscreen ? "Exit full screen" : "Full screen"}
+            {isFullscreen ? "Exit" : "Full screen"}
           </button>
         </div>
+      </div>
+
+      <div className="viewer-floor-controls" aria-label="Building floor selector">
+        <button
+          type="button"
+          className={selectedFloor === null ? "viewer-floor viewer-floor--active" : "viewer-floor"}
+          onClick={() => {
+            setSelectedFloor(null);
+            floorRef.current?.(null);
+          }}
+        >
+          All
+        </button>
+        {[0,1,2,3,4,5].map((floor) => (
+          <button
+            type="button"
+            key={floor}
+            className={selectedFloor === floor ? "viewer-floor viewer-floor--active" : "viewer-floor"}
+            onClick={() => {
+              setSelectedFloor(floor);
+              floorRef.current?.(floor);
+            }}
+          >
+            {floor === 0 ? "Ground" : `F${floor}`}
+          </button>
+        ))}
       </div>
 
       {(mode === "loading" || mode === "booting") && (
