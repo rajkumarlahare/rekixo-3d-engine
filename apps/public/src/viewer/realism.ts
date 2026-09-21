@@ -14,6 +14,7 @@ function applySourceTexture(
 
   const cached = sourceTextureCache.get(key);
   if (cached) {
+    material.color.setHex(0xffffff);
     material.map = cached;
     material.needsUpdate = true;
     return;
@@ -35,6 +36,7 @@ function applySourceTexture(
       texture.needsUpdate = true;
       sourceTextureCache.set(key, texture);
       for (const target of sourceTextureWaiters.get(key) ?? []) {
+        target.color.setHex(0xffffff);
         target.map = texture;
         target.needsUpdate = true;
       }
@@ -87,32 +89,32 @@ export function enhanceArchitecturalModel(
       tuneTexture(material.emissiveMap, anisotropy);
       applySourceTexture(material, anisotropy);
 
-      material.envMapIntensity = Math.max(material.envMapIntensity || 1, 1.18);
+      material.envMapIntensity = Math.max(material.envMapIntensity || 1, 1.42);
 
       if (name === "frontcolor") {
-        material.color.setHex(0xf0ede6);
+        material.color.setHex(0xf4f0e9);
         material.roughness = 0.7;
         material.metalness = 0.01;
       } else if (name === "color_m06") {
-        material.color.setHex(0x3d3f42);
+        material.color.setHex(0x34373a);
         material.roughness = 0.52;
         material.metalness = 0.08;
       } else if (name === "color_m00") {
-        material.color.setHex(0xf5f2ec);
+        material.color.setHex(0xf8f5ef);
         material.roughness = 0.72;
         material.metalness = 0.01;
       } else if (name === "color_a06") {
-        material.color.setHex(0x8b6247);
+        material.color.setHex(0x95694a);
         material.roughness = 0.5;
         material.metalness = 0.02;
       }
 
       if (/glass|window|translucent/.test(name)) {
-        material.color.setHex(0x9fc7d4);
+        material.color.setHex(0xa8d0df);
         material.roughness = Math.min(material.roughness, 0.14);
         material.metalness = Math.min(material.metalness, 0.05);
         material.transparent = true;
-        material.opacity = Math.min(material.opacity, 0.58);
+        material.opacity = Math.min(material.opacity, 0.48);
         material.depthWrite = false;
       } else if (/metal|steel|aluminium|aluminum|railing|panel/.test(name)) {
         material.metalness = Math.max(material.metalness, 0.55);

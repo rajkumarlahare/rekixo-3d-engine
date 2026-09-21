@@ -8,16 +8,16 @@ function roundedRectTexture(renderer: THREE.WebGLRenderer) {
   if (!ctx) return undefined;
 
   const gradient = ctx.createLinearGradient(0, 0, 0, 512);
-  gradient.addColorStop(0, "#2f5f98");
-  gradient.addColorStop(0.42, "#6f99c5");
-  gradient.addColorStop(0.72, "#c8d6df");
-  gradient.addColorStop(1, "#e8b98b");
+  gradient.addColorStop(0, "#5f91c6");
+  gradient.addColorStop(0.42, "#8fb3d4");
+  gradient.addColorStop(0.72, "#d9e2e6");
+  gradient.addColorStop(1, "#efc9a5");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, 512, 512);
 
   const sun = ctx.createRadialGradient(354, 190, 2, 354, 190, 78);
   sun.addColorStop(0, "rgba(255,244,217,.96)");
-  sun.addColorStop(.18, "rgba(255,222,174,.55)");
+  sun.addColorStop(.18, "rgba(255,226,183,.42)");
   sun.addColorStop(1, "rgba(255,205,158,0)");
   ctx.fillStyle = sun;
   ctx.fillRect(0, 0, 512, 512);
@@ -67,7 +67,7 @@ export function createArchitecturalSiteEnvironment(
   }
 
   const groundMaterial = new THREE.MeshStandardMaterial({
-    color: 0x8f8b83,
+    color: 0xb7b0a6,
     roughness: 0.98,
     metalness: 0,
   });
@@ -83,7 +83,7 @@ export function createArchitecturalSiteEnvironment(
   return {
     root,
     setNight(night: boolean) {
-      groundMaterial.color.setHex(night ? 0x303238 : 0x8f8b83);
+      groundMaterial.color.setHex(night ? 0x3b3f46 : 0xb7b0a6);
     },
     dispose() {
       skyTexture?.dispose();
