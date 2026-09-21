@@ -41,12 +41,13 @@ jobs:
           rekixo-3d-assets/projects/jyoti-paradise/models/exterior-v1.glb
           --file=/tmp/exterior-v1.glb
           --content-type=model/gltf-binary
+          --remote
 
       - name: Verify R2 object
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes wrangler@4 r2 object get rekixo-3d-assets/projects/jyoti-paradise/models/exterior-v1.glb --file=/tmp/roundtrip.glb
+          npx --yes wrangler@4 r2 object get rekixo-3d-assets/projects/jyoti-paradise/models/exterior-v1.glb --file=/tmp/roundtrip.glb --remote
           echo "e194cb842657e83278c43bb82cbe12c5fb1797461aac8e5dbb086a9cf2cb752e  /tmp/roundtrip.glb" | sha256sum -c -
 
       - name: Verify live model availability
