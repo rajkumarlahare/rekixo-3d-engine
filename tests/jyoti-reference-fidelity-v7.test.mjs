@@ -26,13 +26,13 @@ test("premium shell exposes touch and desktop room walkthrough", () => {
   const app = read("apps/public/src/main.tsx");
   assert.match(app, /Room Walkthrough/);
   assert.match(app, /initialWalk=\{mode === "walk"\}/);
-  assert.match(app, /visualPreset="jyoti-reference"/);
+  assert.match(app, /visualPreset="reference-render"/);
   assert.match(app, /WASD or arrow keys/);
 });
 
 test("walk mode uses interior bounds", () => {
   const viewer = read("apps/public/src/viewer/Viewer3D.tsx");
-  assert.match(viewer, /visualPreset\?: "default" \| "jyoti-reference"/);
+  assert.match(viewer, /visualPreset\?: "default" \| "reference-render"/);
   assert.match(viewer, /experienceMode === "interior" \? projectExperience : undefined/);
   assert.match(viewer, /interiorExperience\.focus\("interior"\)\.box\.clone\(\)/);
   assert.match(viewer, /activeWalkBounds/);
