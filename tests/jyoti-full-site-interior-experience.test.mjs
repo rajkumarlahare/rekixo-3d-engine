@@ -21,11 +21,11 @@ test("brochure-backed typical floor includes the three marketed unit series", ()
   assert.match(source, /102-502/);
   assert.match(source, /103-403/);
   assert.match(source, /Living 4\.954 x 3\.050/);
-  assert.match(source, /Kitchen 3\.279 x 2\.196/);
-  assert.match(source, /Living 4\.828 x 3\.050/);
+  assert.match(source, /Kitchen 3\.379 x 2\.196/);
+  assert.match(source, /Living 4\.828 x 3\.050/);\n  assert.match(source, /Kitchen 3\.516 x 2\.155/);
   assert.match(source, /Living 5\.366 x 3\.000/);
   assert.match(source, /Fire Lift 1\.60 x 1\.80/);
-  assert.match(source, /DUCT 1\.80 x 3\.96/);
+  assert.match(source, /DUCT 1\.80 x 3\.26/);
 });
 
 test("interior furniture follows brochure room types", () => {
