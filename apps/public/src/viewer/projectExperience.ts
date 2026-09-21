@@ -113,12 +113,22 @@ function makeFlowerStrip(width: number) {
 
 function makeRoad(width: number, depth: number) {
   const group = new THREE.Group();
-  const asphalt = box([width, 0.09, depth], standard(0x26282b, 0.98), [0, 0.045, 0]);
+  const asphalt = box([width, 0.09, depth], standard(0x3a3d40, 0.94), [0, 0.045, 0]);
   group.add(asphalt);
 
-  const markingMat = standard(0xf1eee4, 0.78);
+  const sidewalkMat = standard(0xb8afa2, 0.86);
+  const curbMat = standard(0xd8d2c8, 0.78);
+  for (const side of [-1, 1]) {
+    const z = side * (depth / 2 + 0.58);
+    group.add(
+      box([width, 0.13, 0.9], sidewalkMat, [0, 0.075, z]),
+      box([width, 0.22, 0.14], curbMat, [0, 0.11, side * (depth / 2 + 0.08)]),
+    );
+  }
+
+  const markingMat = standard(0xf0ede7, 0.72);
   for (let x = -width * 0.4; x <= width * 0.4; x += Math.max(width * 0.12, 2.4)) {
-    const stripe = box([Math.max(width * 0.055, 1.2), 0.015, 0.08], markingMat, [x, 0.1, 0]);
+    const stripe = box([Math.max(width * 0.055, 1.2), 0.018, 0.075], markingMat, [x, 0.105, 0]);
     group.add(stripe);
   }
   return group;
@@ -378,14 +388,14 @@ function makeRoofOverlay(bounds: THREE.Box3, features: ExperienceFeature[]) {
   return root;
 }
 
-function addFacadeWarmLights(root: THREE.Object3D, bounds: THREE.Box3) {
+function addFacadeWarmLights(root: THREE.Object3D, bounds: THREE.Box3, mobile: boolean) {
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
   const lightMat = new THREE.MeshStandardMaterial({
-    color: 0xffe4bb,
-    emissive: 0xff9e48,
-    emissiveIntensity: 5,
-    roughness: 0.32,
+    color: 0xffe8c6,
+    emissive: 0xffa65a,
+    emissiveIntensity: 4.2,
+    roughness: 0.3,
   });
   const floors = [0.23, 0.36, 0.49, 0.62, 0.75, 0.88];
   for (const ratio of floors) {
@@ -394,6 +404,18 @@ function addFacadeWarmLights(root: THREE.Object3D, bounds: THREE.Box3) {
       const fixture = new THREE.Mesh(new THREE.SphereGeometry(Math.max(size.x * 0.008, 0.055), 10, 8), lightMat);
       fixture.position.set(center.x + size.x * xRatio, y, bounds.max.z + Math.max(size.z * 0.012, 0.04));
       root.add(fixture);
+    }
+  }
+
+  if (!mobile) {
+    for (const xRatio of [-0.3, 0.28]) {
+      const light = new THREE.PointLight(0xffb56d, 5.5, Math.max(size.x * 0.72, 10), 2);
+      light.position.set(
+        center.x + size.x * xRatio,
+        bounds.min.y + size.y * 0.48,
+        bounds.max.z + Math.max(size.z * 0.22, 1.4),
+      );
+      root.add(light);
     }
   }
 }
@@ -424,10 +446,10 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
   const baseY = bounds.min.y - Math.max(size.y * 0.006, 0.04);
 
   // Source-faithful site: paved plot, road, low compound wall, gate and restrained front landscaping.
-  const plot = box([spanX * 1.68, 0.14, spanZ * 1.48], standard(0xb9b0a3, 0.9), [center.x, baseY - 0.06, center.z]);
+  const plot = box([spanX * 1.68, 0.14, spanZ * 1.48], standard(0xc5bbae, 0.88), [center.x, baseY - 0.06, center.z]);
   addFeature(siteRoot, features, plot, "plot", "Project Plot", "Site", "Project parcel shown as a compact paved residential site around the building.");
 
-  const parking = box([spanX * 1.35, 0.09, spanZ * 0.58], standard(0x77716b, 0.9), [center.x, baseY + 0.02, center.z + spanZ * 0.18]);
+  const parking = box([spanX * 1.35, 0.09, spanZ * 0.58], standard(0x918a82, 0.86), [center.x, baseY + 0.02, center.z + spanZ * 0.18]);
   addFeature(siteRoot, features, parking, "parking", "Car Parking", "Amenity", "Car Parking is explicitly listed in the supplied project brochure.");
 
   const road = makeRoad(spanX * 2.35, Math.max(spanZ * 0.42, 5.2));
@@ -454,8 +476,8 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
     }
   }
 
-  const boundaryMat = standard(0xb95d43, 0.9);
-  const capMat = standard(0xe8ded0, 0.78);
+  const boundaryMat = standard(0xb8684f, 0.84);
+  const capMat = standard(0xeee5da, 0.72);
   const wallH = 0.85;
   const wallDepth = spanZ * 1.4;
   for (const x of [center.x - spanX * 0.82, center.x + spanX * 0.82]) {
@@ -480,7 +502,7 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
   gate.position.set(center.x, baseY, frontZ);
   addFeature(siteRoot, features, gate, "gate", "Main Gate", "Site", "Decorative front gate matching the exterior-render treatment.");
 
-  addFacadeWarmLights(siteRoot, bounds);
+  addFacadeWarmLights(siteRoot, bounds, mobile);
 
   const interior = makeBrochureTypicalFloor(features);
   const floorScale = Math.min(
