@@ -15,6 +15,8 @@ interface Viewer3DProps {
   cameraPreset?: CameraPreset3D;
   modelLabel?: string;
   interactionMode?: "section" | "detail";
+  initialWalk?: boolean;
+  initialWalkFloor?: number | null;
 }
 
 interface HomeView {
@@ -175,6 +177,8 @@ export function Viewer3D({
   cameraPreset,
   modelLabel,
   interactionMode,
+  initialWalk = false,
+  initialWalkFloor = null,
 }: Viewer3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const resetRef = useRef<(() => void) | null>(null);
@@ -459,6 +463,10 @@ export function Viewer3D({
         controls.update();
       }
       if (interactionMode === "section") applySection(true);
+      if (initialWalk) {
+        setWalkMode(true);
+        enterWalkMode(true, initialWalkFloor);
+      }
     };
 
     const mountPreview = (message: string) => {
@@ -565,7 +573,7 @@ export function Viewer3D({
       walkModeRef.current = null;
       walkStepRef.current = null;
     };
-  }, [modelUrl, cameraPreset, interactionMode]);
+  }, [modelUrl, cameraPreset, interactionMode, initialWalk, initialWalkFloor]);
 
   useEffect(() => {
     const update = () => {
@@ -678,7 +686,11 @@ export function Viewer3D({
           className={selectedFloor === null ? "viewer-floor viewer-floor--active" : "viewer-floor"}
           onClick={() => {
             setSelectedFloor(null);
-            floorRef.current?.(null);
+            if (walkMode) {
+              walkModeRef.current?.(true, null);
+            } else {
+              floorRef.current?.(null);
+            }
           }}
         >
           All
