@@ -108,7 +108,7 @@ function NotFound({ message }: { message?: string }) {
   );
 }
 
-function ProjectNavigation({ experience }: { experience: Public3DExperience }) {
+function ProjectNavigation({ experience, walkFloor }: { experience: Public3DExperience; walkFloor?: number }) {
   const { model, camera, project } = experience;
   const settings = settingsOf<ProjectSettings>(sceneOf(experience, "project-navigation"));
   const render = mediaUrl(experience, settings.exteriorRenderKey);
@@ -120,6 +120,8 @@ function ProjectNavigation({ experience }: { experience: Public3DExperience }) {
           modelUrl={model?.available ? model.url : undefined}
           cameraPreset={camera}
           modelLabel={model?.name}
+          initialWalk={walkFloor !== undefined}
+          initialWalkFloor={walkFloor ?? null}
         />
       </section>
 
@@ -159,7 +161,7 @@ function unitNumberForFloor(series: string, floor: number) {
   return candidate >= start && candidate <= end ? String(candidate) : null;
 }
 
-function TypicalFloor({ experience }: { experience: Public3DExperience }) {
+function TypicalFloor({ experience, onEnterFloor }: { experience: Public3DExperience; onEnterFloor: (floor: number) => void }) {
   const scene = sceneOf(experience, "typical-floor");
   const settings = settingsOf<FloorSettings>(scene);
   const floorPlan = mediaUrl(experience, settings.mediaKey);
@@ -226,6 +228,9 @@ function TypicalFloor({ experience }: { experience: Public3DExperience }) {
             highlighting is intentionally not guessed until a semantic unit boundary is verified
             from the architectural source model.
           </p>
+          <button type="button" className="unit-enter-button" onClick={() => onEnterFloor(floor)}>
+            Enter Floor {floor} in 3D Walk
+          </button>
         </div>
       )}
     </section>
@@ -349,6 +354,7 @@ function App() {
   const [error, setError] = useState<string>();
   const [attempt, setAttempt] = useState(0);
   const [activeType, setActiveType] = useState<Scene3DType>("project-navigation");
+  const [walkRequestFloor, setWalkRequestFloor] = useState<number>();
 
   useEffect(() => {
     if (!slug) return;
@@ -403,7 +409,10 @@ function App() {
             <button
               type="button"
               className={activeType === type ? "module module--active" : "module"}
-              onClick={() => setActiveType(type)}
+              onClick={() => {
+                if (type !== "project-navigation") setWalkRequestFloor(undefined);
+                setActiveType(type);
+              }}
               key={type}
             >
               <span>{String(index + 1).padStart(2, "0")}</span>
@@ -415,9 +424,17 @@ function App() {
       </nav>
 
       <div className="module-stage" key={activeType}>
-        {activeType === "project-navigation" && <ProjectNavigation experience={experience} />}
+        {activeType === "project-navigation" && <ProjectNavigation experience={experience} walkFloor={walkRequestFloor} />}
         {activeType === "wing-distance" && <LocationMap experience={experience} />}
-        {activeType === "typical-floor" && <TypicalFloor experience={experience} />}
+        {activeType === "typical-floor" && (
+          <TypicalFloor
+            experience={experience}
+            onEnterFloor={(floor) => {
+              setWalkRequestFloor(floor);
+              setActiveType("project-navigation");
+            }}
+          />
+        )}
         {activeType === "amenity" && <Amenities experience={experience} />}
         {activeType === "section" && activeReady && (
           <ModelModule experience={experience} type="section" title="Interactive Section Cut" interactionMode="section" />
