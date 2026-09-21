@@ -10,7 +10,7 @@ test("V7 keeps original FBX audit tints and adds separate reference calibration"
     assert.match(realism, new RegExp(token));
   }
   assert.match(realism, /const referenceFacadeTint/);
-  for (const token of ["frontcolor: 0xe3ddd5","color_m06: 0x2f3439","metal_panel: 0x704d40","color_a06: 0x8f5b43","color_j08: 0xa4b4aa"]) {
+  for (const token of ["frontcolor: 0xdcd5cc","color_m06: 0x2a3035","metal_panel: 0x68483c","color_a06: 0x8a5742","color_j08: 0xb2beb2"]) {
     assert.match(realism, new RegExp(token));
   }
   assert.match(realism, /referenceFacadeTint\[normalized\] \?\? sourceMaterialTint\[normalized\]/);
