@@ -14,26 +14,15 @@ UPDATE scenes_3d
        updated_at = datetime('now')
  WHERE id = 'scene_jyoti_amenities_v1';
 
-INSERT INTO scenes_3d (
-  id, project_id, name, type, model_id, camera_preset_id,
-  settings_json, sort_order, enabled
-) VALUES (
-  'scene_jyoti_site_map_v1',
-  'project_jyoti_paradise',
-  'Location Map',
-  'site-map',
-  NULL,
-  NULL,
-  '{"status":"ready","source":"Jyoti Paradise brochure","title":"Hingna, Nagpur Connectivity","subtitle":"Project location context with brochure-listed nearby destinations.","projectLabel":"Jyoti Paradise","mapQuery":"Jyoti Paradise Hingna Nagpur","nearby":[{"name":"Hingna D-Mart","distance":"1 KM"},{"name":"Lata Mangeshkar Hospital","distance":"2 KM"},{"name":"G.S. Raisoni College","distance":"1 KM"},{"name":"Priyadarshini Engineering College","distance":"1 KM"},{"name":"Hingna Road","distance":"1 KM"},{"name":"Metro Station","distance":"1 KM"}],"note":"Distances are brochure-supplied. The on-site diagram is a connectivity overview, not a surveyed geographic map."}',
-  20,
-  1
-)
-ON CONFLICT(id) DO UPDATE SET
-  name = excluded.name,
-  settings_json = excluded.settings_json,
-  sort_order = excluded.sort_order,
-  enabled = excluded.enabled,
-  updated_at = datetime('now');
+UPDATE scenes_3d
+   SET name = 'Location Map',
+       model_id = NULL,
+       camera_preset_id = NULL,
+       settings_json = '{"status":"ready","source":"Jyoti Paradise brochure","title":"Hingna, Nagpur Connectivity","subtitle":"Project location context with brochure-listed nearby destinations.","projectLabel":"Jyoti Paradise","mapQuery":"Jyoti Paradise Hingna Nagpur","nearby":[{"name":"Hingna D-Mart","distance":"1 KM"},{"name":"Lata Mangeshkar Hospital","distance":"2 KM"},{"name":"G.S. Raisoni College","distance":"1 KM"},{"name":"Priyadarshini Engineering College","distance":"1 KM"},{"name":"Hingna Road","distance":"1 KM"},{"name":"Metro Station","distance":"1 KM"}],"note":"Distances are brochure-supplied. The on-site diagram is a connectivity overview, not a surveyed geographic map."}',
+       sort_order = 20,
+       enabled = 1,
+       updated_at = datetime('now')
+ WHERE id = 'scene_jyoti_wing_distance_pending';
 
 UPDATE scenes_3d
    SET name = 'Interactive Section Cut',
@@ -55,19 +44,12 @@ UPDATE scenes_3d
        updated_at = datetime('now')
  WHERE id = 'scene_jyoti_balcony_pending';
 
-UPDATE scenes_3d
-   SET sort_order = 90,
-       settings_json = '{"status":"not-applicable","reason":"The supplied Jyoti Paradise source is treated as one building; no verified multi-wing distance data is published."}',
-       enabled = 0,
-       updated_at = datetime('now')
- WHERE id = 'scene_jyoti_wing_distance_pending';
-
 INSERT OR IGNORE INTO publish_versions_3d (
   id, project_id, version, snapshot_json, published_at
 ) VALUES (
   'publish_jyoti_v2',
   'project_jyoti_paradise',
   2,
-  '{"source":"project-team-files+phase1-geometry-audit","model":"model_jyoti_exterior_v1","modules":["project-navigation","site-map","typical-floor","amenity","section","balcony"],"floorPattern":"G+5+terrace","notes":["section is interactive clipping, not a structural drawing","facade detail is exterior model inspection"]}',
+  '{"source":"project-team-files+phase1-geometry-audit","model":"model_jyoti_exterior_v1","modules":["project-navigation","wing-distance","typical-floor","amenity","section","balcony"],"floorPattern":"G+5+terrace","notes":["section is interactive clipping, not a structural drawing","facade detail is exterior model inspection"]}',
   datetime('now')
 );

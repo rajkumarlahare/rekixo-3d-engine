@@ -122,7 +122,7 @@ Source discipline remains strict:
 
 - DWG/SKB/FBX source files stay outside Git
 - brochure facts are not silently expanded
-- the site-map diagram is a connectivity overview, not a surveyed cadastral map
+- the Location Map diagram is a connectivity overview, not a surveyed cadastral map
 - section view is interactive model clipping, not a structural section drawing
 - unit numbering is shown only where the supplied brochure series supports it
 

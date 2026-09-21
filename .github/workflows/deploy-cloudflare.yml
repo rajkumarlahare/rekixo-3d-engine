@@ -124,7 +124,7 @@ jobs:
               && [ "$API_STATUS" = "200" ] \
               && grep -Fq '"slug":"jyoti-paradise"' "$API" \
               && grep -Fq '"id":"model_jyoti_exterior_v1"' "$API" \
-              && grep -Fq '"type":"site-map"' "$API" \
+              && grep -Fq '"type":"wing-distance"' "$API" \
               && grep -Fq '"type":"typical-floor"' "$API" \
               && grep -Fq '"type":"amenity"' "$API" \
               && grep -Fq '"type":"section"' "$API" \
