@@ -5,6 +5,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import type { CameraPreset3D } from "@rekixo/3d-contracts";
+import { createFloorExploder, enhanceArchitecturalModel } from "./realism";
 
 type ViewerMode = "booting" | "loading" | "model" | "demo" | "error";
 
@@ -179,6 +180,7 @@ export function Viewer3D({
   const floorRef = useRef<((floor: number | null) => void) | null>(null);
   const sectionRef = useRef<((enabled: boolean) => void) | null>(null);
   const lightingRef = useRef<((night: boolean) => void) | null>(null);
+  const explodeRef = useRef<((enabled: boolean) => void) | null>(null);
   const [mode, setMode] = useState<ViewerMode>("booting");
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -186,6 +188,7 @@ export function Viewer3D({
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
   const [sectionEnabled, setSectionEnabled] = useState(interactionMode === "section");
   const [nightMode, setNightMode] = useState(false);
+  const [exploded, setExploded] = useState(false);
 
   useEffect(() => {
     const candidate = hostRef.current;
@@ -196,6 +199,7 @@ export function Viewer3D({
     let animationFrame = 0;
     let activeObject: THREE.Object3D | undefined;
     let homeView: HomeView | undefined;
+    let floorExploder: ReturnType<typeof createFloorExploder> | undefined;
 
     const mobile = isMobileDevice();
     const scene = new THREE.Scene();
@@ -224,9 +228,11 @@ export function Viewer3D({
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.065;
-    controls.enablePan = false;
+    controls.enablePan = true;
     controls.rotateSpeed = 0.72;
-    controls.zoomSpeed = 0.8;
+    controls.zoomSpeed = 0.82;
+    controls.panSpeed = 0.65;
+    controls.screenSpacePanning = true;
     controls.minPolarAngle = THREE.MathUtils.degToRad(18);
     controls.maxPolarAngle = THREE.MathUtils.degToRad(87);
 
@@ -264,6 +270,7 @@ export function Viewer3D({
     const pmrem = new THREE.PMREMGenerator(renderer);
     const environmentTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = environmentTexture;
+    scene.environmentIntensity = 1.08;
 
     const updateSize = () => {
       const width = Math.max(hostElement.clientWidth, 1);
@@ -342,7 +349,17 @@ export function Viewer3D({
       }
       activeObject = object;
       scene.add(object);
+      object.updateMatrixWorld(true);
       modelBounds = new THREE.Box3().setFromObject(object);
+      enhanceArchitecturalModel(object, renderer);
+      floorExploder = createFloorExploder(object, modelBounds);
+      explodeRef.current = (enabled) => floorExploder?.setExploded(enabled);
+
+      const size = modelBounds.getSize(new THREE.Vector3());
+      const groundSize = Math.max(size.x, size.z, 12);
+      ground.scale.setScalar(Math.max(1, groundSize / 20));
+      ground.position.y = modelBounds.min.y - Math.max(size.y * 0.002, 0.02);
+
       homeView =
         usePreset && cameraPreset
           ? applyPreset(cameraPreset, camera, controls)
@@ -380,12 +397,6 @@ export function Viewer3D({
             disposeObject(gltf.scene);
             return;
           }
-
-          gltf.scene.traverse((object) => {
-            if (!(object instanceof THREE.Mesh)) return;
-            object.castShadow = renderer.shadowMap.enabled;
-            object.receiveShadow = true;
-          });
 
           mountObject(gltf.scene, Boolean(cameraPreset));
           setProgress(100);
@@ -446,6 +457,7 @@ export function Viewer3D({
       floorRef.current = null;
       sectionRef.current = null;
       lightingRef.current = null;
+      explodeRef.current = null;
     };
   }, [modelUrl, cameraPreset, interactionMode]);
 
@@ -503,6 +515,17 @@ export function Viewer3D({
             }}
           >
             {nightMode ? "Day" : "Night"}
+          </button>
+          <button
+            type="button"
+            className={exploded ? "viewer-action viewer-action--active" : "viewer-action"}
+            onClick={() => {
+              const next = !exploded;
+              setExploded(next);
+              explodeRef.current?.(next);
+            }}
+          >
+            Explode
           </button>
           <button
             type="button"
@@ -571,7 +594,7 @@ export function Viewer3D({
       )}
 
       <div className="viewer-help" aria-hidden="true">
-        Drag to rotate · Pinch or wheel to zoom
+        Drag to rotate · Two-finger/secondary drag to pan · Pinch or wheel to zoom
       </div>
     </div>
   );

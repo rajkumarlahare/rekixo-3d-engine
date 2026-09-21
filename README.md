@@ -127,3 +127,24 @@ Source discipline remains strict:
 - unit numbering is shown only where the supplied brochure series supports it
 
 See [docs/JYOTI-PARADISE.md](./docs/JYOTI-PARADISE.md) and [docs/JYOTI-PARADISE-PHASE-1-GEOMETRY-LOCK.md](./docs/JYOTI-PARADISE-PHASE-1-GEOMETRY-LOCK.md).
+
+
+## Jyoti Paradise realistic Phase 1–3
+
+The Jyoti Paradise Engine experience now uses the supplied project model as the visual source and applies a realistic runtime pass rather than replacing it with generic/cartoon geometry.
+
+Completed in this milestone:
+
+- source/geometry/material audit
+- G+5 + terrace floor lock
+- FBX material inventory tooling
+- PBR material enhancement
+- architectural environment lighting and shadows
+- day/night mode
+- orbit, zoom and pan
+- Ground/F1–F5 isolation
+- exploded-floor interaction
+- section cut
+- brochure-backed unit selection and area display
+
+Exact unit-to-mesh binding remains intentionally gated when the supplied source model does not expose reliable semantic unit IDs. See [docs/JYOTI-PARADISE-REALISTIC-PHASE-1-3.md](./docs/JYOTI-PARADISE-REALISTIC-PHASE-1-3.md).
