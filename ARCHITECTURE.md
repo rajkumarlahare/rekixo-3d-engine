@@ -1,15 +1,15 @@
-# Rekixo 3D Engine Architecture Contract
+# Rekixo AR3D Engine Architecture Contract
 
 Status: **LOCKED**
-Date: 2026-09-15
+Date: 2026-09-21
 
 This file is the source of truth for the 3D platform architecture. Future patches must preserve these boundaries unless the owner explicitly changes them.
 
-## 1. Existing Rekixo system is out of scope
+## 1. Rekixo AR3D product-family boundary
 
 The following existing production surfaces must remain unchanged by 3D development:
 
-- Repository: `rajkumarlahare/tiyansh-prime-square`
+- Sibling platform repository: `rajkumarlahare/rekixo-ar3d-platform` (historical name: `rajkumarlahare/tiyansh-prime-square`)
 - Super Admin: `https://admin.rekixo.com/admin`
 - Existing public projects: `https://ar3dstudio.in/projects/*`
 - Existing D1 database: `tiyansh-production`
@@ -17,13 +17,15 @@ The following existing production surfaces must remain unchanged by 3D developme
 - Existing Cloudflare Workers and current deployment workflow
 - Existing plot mapper, project mapper, road access, side mapping, pricing, plot status, project gallery, client admin, and public project runtime
 
-No 3D dependency, schema migration, asset, route, or deployment step may be added to that system just to support this engine.
+The Platform and Engine are parts of the same Rekixo AR3D product family, but their production runtime resources stay isolated. No 3D dependency, schema migration, asset, route, or deployment step may be added to the Platform merely to support this engine.
 
 ## 2. New 3D system identity
 
 Repository:
 
-`rajkumarlahare/rekixo-3d-engine`
+`rajkumarlahare/rekixo-ar3d-engine`
+
+Historical repository name: `rajkumarlahare/rekixo-3d-engine`. The rename is source identity only; Cloudflare resource names remain unchanged.
 
 Admin surface:
 
@@ -148,10 +150,10 @@ Section View, Balcony View, Typical Floor, Amenity Floor, hotspots, advanced flo
 
 ## 9. Deployment rule
 
-The new repository receives its own CI/CD workflow. Deploying the 3D engine must not trigger or modify deployment of the existing `tiyansh-prime-square` application.
+The Engine repository has its own CI/CD workflow. Deploying the AR3D Engine must not trigger or modify deployment of the sibling `rekixo-ar3d-platform` application.
 
 Production routing is configured only after the new Workers, D1, and R2 resources exist and have been verified independently.
 
 ## 10. Change-control rule
 
-Any patch that would touch the old Rekixo/Tiyansh repo, old D1/R2 resources, old `/admin` surface, or old `/projects/*` route must stop and require an explicit architecture decision first.
+Any patch that would couple the Engine to the AR3D Platform D1/R2 resources, `/admin` surface, or `/projects/*` route must stop and require an explicit architecture decision first.
