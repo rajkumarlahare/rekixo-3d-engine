@@ -348,6 +348,227 @@ function PendingModule({ type, experience }: { type: Scene3DType; experience: Pu
   );
 }
 
+type TwinMode = "project" | "building" | "floors" | "units" | "amenities" | "balcony" | "context";
+
+const twinModes: Array<{ id: TwinMode; label: string; short: string }> = [
+  { id: "project", label: "Project Navigation", short: "Project" },
+  { id: "building", label: "Building Explorer", short: "Building" },
+  { id: "floors", label: "Floor Explorer", short: "Floors" },
+  { id: "units", label: "Unit Explorer", short: "Units" },
+  { id: "amenities", label: "Amenities", short: "Amenities" },
+  { id: "balcony", label: "Balcony View", short: "Balcony" },
+  { id: "context", label: "Distance & Context", short: "Context" },
+];
+
+function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
+  const projectSettings = settingsOf<ProjectSettings>(sceneOf(experience, "project-navigation"));
+  const floorSettings = settingsOf<FloorSettings>(sceneOf(experience, "typical-floor"));
+  const amenitySettings = settingsOf<AmenitySettings>(sceneOf(experience, "amenity"));
+  const locationSettings = settingsOf<LocationSettings>(sceneOf(experience, "wing-distance"));
+  const [mode, setMode] = useState<TwinMode>("project");
+  const [floor, setFloor] = useState<number | null>(null);
+  const [unit, setUnit] = useState<string>();
+  const units = floorSettings.units ?? [];
+  const visibleUnits = floor === null
+    ? []
+    : units
+        .map((item) => ({ ...item, number: unitNumberForFloor(item.series, floor) }))
+        .filter((item) => item.number);
+
+  const viewerKey = `${mode}-${floor ?? "all"}-${unit ?? "none"}`;
+  const presentationView =
+    mode === "project" || mode === "context" || mode === "amenities"
+      ? (mode === "context" ? "context" : "aerial")
+      : mode === "building"
+        ? "building"
+        : mode === "balcony"
+          ? "balcony"
+          : "top";
+
+  const viewerFloor = mode === "units" ? floor ?? 1 : mode === "floors" ? floor : null;
+  const exploded = mode === "floors" && floor === null;
+  const nearby = locationSettings.nearby ?? amenitySettings.nearby ?? [];
+
+  return (
+    <main className="twin-shell">
+      <section className="twin-stage">
+        <Viewer3D
+          key={viewerKey}
+          modelUrl={experience.model?.available ? experience.model.url : undefined}
+          cameraPreset={experience.camera}
+          modelLabel={experience.model?.name}
+          presentationView={presentationView}
+          initialFloor={viewerFloor}
+          initialExploded={exploded}
+          compactUi
+        />
+
+        <header className="twin-topbar">
+          <div className="twin-brand">
+            <span>AR</span>
+            <div>
+              <small>AR3D DIGITAL TWIN</small>
+              <strong>{experience.project.name}</strong>
+            </div>
+          </div>
+          <div className="twin-top-meta">
+            <span>{experience.project.location}</span>
+            <b>{projectSettings.brochurePrice ?? "Interactive 3D"}</b>
+          </div>
+        </header>
+
+        <nav className="twin-rail" aria-label="Jyoti Paradise digital twin navigation">
+          {twinModes.map((item, index) => (
+            <button
+              type="button"
+              className={mode === item.id ? "twin-rail-item twin-rail-item--active" : "twin-rail-item"}
+              key={item.id}
+              onClick={() => {
+                setMode(item.id);
+                if (item.id === "floors") {
+                  setFloor(null);
+                  setUnit(undefined);
+                }
+                if (item.id === "units" && floor === null) setFloor(1);
+              }}
+            >
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{item.short}</strong>
+            </button>
+          ))}
+        </nav>
+
+        <div className="twin-title-card">
+          <span>{twinModes.find((item) => item.id === mode)?.label}</span>
+          <h1>{experience.project.name}</h1>
+          <p>
+            {mode === "project" && "Explore the complete project from an aerial interactive view."}
+            {mode === "building" && "Inspect the building facade from a premium architectural camera."}
+            {mode === "floors" && "Separate the building stack or focus a single verified floor."}
+            {mode === "units" && "Select brochure-backed units on a floor without inventing geometry."}
+            {mode === "amenities" && "Review brochure-backed project amenities in project context."}
+            {mode === "balcony" && "Inspect the facade and balcony side from a dedicated viewing angle."}
+            {mode === "context" && "Review brochure-listed connectivity and nearby destinations around the project."}
+          </p>
+        </div>
+
+        {(mode === "floors" || mode === "units") && (
+          <div className="twin-floor-strip" aria-label="Floor selection">
+            {mode === "floors" && (
+              <button
+                type="button"
+                className={floor === null ? "active" : ""}
+                onClick={() => {
+                  setFloor(null);
+                  setUnit(undefined);
+                }}
+              >
+                ALL
+              </button>
+            )}
+            {[0,1,2,3,4,5].map((item) => (
+              <button
+                type="button"
+                key={item}
+                className={floor === item ? "active" : ""}
+                onClick={() => {
+                  setFloor(item);
+                  setUnit(undefined);
+                }}
+              >
+                {item === 0 ? "G" : `F${item}`}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {mode === "units" && (
+          <aside className="twin-info-panel twin-info-panel--right">
+            <span className="twin-kicker">UNIT EXPLORER</span>
+            <h2>{floor === 0 ? "Ground Level" : `Floor ${floor ?? 1}`}</h2>
+            <div className="twin-unit-list">
+              {visibleUnits.map((item) => (
+                <button
+                  type="button"
+                  key={item.series}
+                  className={unit === item.number ? "active" : ""}
+                  onClick={() => setUnit(item.number ?? undefined)}
+                >
+                  <span>Flat {item.number}</span>
+                  <strong>{item.type}</strong>
+                  <b>{item.areaSqFt.toLocaleString("en-IN")} sq.ft.</b>
+                </button>
+              ))}
+              {!visibleUnits.length && (
+                <p>No brochure-listed residential unit is mapped to this level.</p>
+              )}
+            </div>
+            {unit && (
+              <div className="twin-selection">
+                <small>SELECTED</small>
+                <strong>Flat {unit}</strong>
+                <span>3D unit mesh highlight will activate only after its source boundary is verified.</span>
+              </div>
+            )}
+          </aside>
+        )}
+
+        {mode === "amenities" && (
+          <aside className="twin-info-panel twin-info-panel--right">
+            <span className="twin-kicker">AMENITIES</span>
+            <h2>Project Features</h2>
+            <div className="twin-chip-list">
+              {(amenitySettings.amenities ?? []).map((item) => <span key={item}>{item}</span>)}
+            </div>
+          </aside>
+        )}
+
+        {mode === "context" && (
+          <aside className="twin-info-panel twin-info-panel--right">
+            <span className="twin-kicker">CONNECTIVITY</span>
+            <h2>{locationSettings.title ?? "Nearby destinations"}</h2>
+            <div className="twin-nearby-list">
+              {nearby.map((item) => (
+                <div key={item.name}>
+                  <strong>{item.name}</strong>
+                  <span>{item.distance}</span>
+                </div>
+              ))}
+            </div>
+            <p className="twin-source-note">Distances are brochure-supplied context, not surveyed GIS measurements.</p>
+          </aside>
+        )}
+
+        {mode === "balcony" && (
+          <aside className="twin-info-panel twin-info-panel--right">
+            <span className="twin-kicker">BALCONY VIEW</span>
+            <h2>Facade-side inspection</h2>
+            <p>
+              This camera uses the verified exterior model. A true apartment-specific outward view
+              will be bound only when the balcony/unit orientation is verified from source geometry.
+            </p>
+          </aside>
+        )}
+
+        <div className="twin-bottom-bar">
+          <div>
+            <span>MODEL</span>
+            <strong>{experience.model?.available ? experience.model.name : "3D asset pending"}</strong>
+          </div>
+          <div>
+            <span>VIEW</span>
+            <strong>{twinModes.find((item) => item.id === mode)?.label}</strong>
+          </div>
+          <div>
+            <span>CONTROL</span>
+            <strong>Drag · Zoom · Pan</strong>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
 function App() {
   const slug = useMemo(() => projectSlugFromPathname(window.location.pathname), []);
   const [experience, setExperience] = useState<Public3DExperience>();
@@ -381,6 +602,7 @@ function App() {
     );
   }
   if (!experience) return <LoadingPage />;
+  if (experience.project.slug === "jyoti-paradise") return <JyotiDigitalTwin experience={experience} />;
 
   const sceneMap = new Map((experience.scenes ?? []).map((scene) => [scene.type, scene]));
   const activeScene = sceneMap.get(activeType);
