@@ -57,12 +57,7 @@ jobs:
           for attempt in 1 2 3 4 5; do
             curl -fsSL "$API" -o /tmp/project.json
             if grep -Fq '"available":true' /tmp/project.json && grep -Fq '"id":"model_jyoti_exterior_v1"' /tmp/project.json; then
-              MODEL_URL="$(python - <<'PY'
-import json
-d=json.load(open('/tmp/project.json'))
-print('https://ar3dstudio.in'+d['model']['url'])
-PY
-)"
+              MODEL_URL="$(python -c "import json; d=json.load(open('/tmp/project.json')); print('https://ar3dstudio.in'+d['model']['url'])")"
               code="$(curl -sS -o /tmp/live.glb -w '%{http_code}' "$MODEL_URL")"
               type="$(file -b /tmp/live.glb || true)"
               echo "model=$MODEL_URL status=$code type=$type"
