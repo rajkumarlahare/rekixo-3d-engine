@@ -363,8 +363,8 @@ const twinModes: Array<{ id: TwinMode; label: string; short: string }> = [
   { id: "building", label: "Building Explorer", short: "Building" },
   { id: "floors", label: "Floor Explorer", short: "Floors" },
   { id: "units", label: "Unit Explorer", short: "Units" },
-  { id: "interior", label: "Furnished Interior", short: "Interior" },
-  { id: "terrace", label: "Roof Terrace", short: "Terrace" },
+  { id: "interior", label: "Typical Floor Interior", short: "Interior" },
+  { id: "terrace", label: "Roof Inspection", short: "Roof" },
   { id: "amenities", label: "Amenities", short: "Amenities" },
   { id: "balcony", label: "Balcony View", short: "Balcony" },
   { id: "context", label: "Distance & Context", short: "Context" },
@@ -461,9 +461,9 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
             {mode === "building" && "Inspect the building facade from a premium architectural camera."}
             {mode === "floors" && "Separate the building stack or focus a single verified floor."}
             {mode === "units" && "Select brochure-backed units on a floor without inventing geometry."}
-            {mode === "interior" && "Explore a furnished 3D show-flat with living room, bedroom, kitchen, dining, bathroom and balcony. Click furniture and room elements for details."}
-            {mode === "terrace" && "Inspect the roof terrace with pergola, seating and planters."}
-            {mode === "amenities" && "Review brochure-backed project amenities and click the pool, garden, road, gate or plot in the 3D scene."}
+            {mode === "interior" && "Explore the brochure-backed typical floor: Flats 101/102/103, lobby, stair, fire lift, rooms, kitchens, toilets and balconies. Click rooms for exact source dimensions."}
+            {mode === "terrace" && "Inspect the actual roof massing and edge lighting. No recreational roof amenity is claimed because it is not present in the supplied brochure."}
+            {mode === "amenities" && "Review only the brochure-listed amenities: Car Parking, Modular Kitchen, POP in Hall and CCTV Camera."}
             {mode === "balcony" && "Inspect the facade and balcony side from a dedicated viewing angle."}
             {mode === "context" && "Review brochure-listed connectivity and nearby destinations around the project."}
           </p>
@@ -497,6 +497,28 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
               </button>
             ))}
           </div>
+        )}
+
+        {mode === "interior" && (
+          <aside className="twin-info-panel twin-info-panel--right">
+            <span className="twin-kicker">BROCHURE-BACKED FLOOR</span>
+            <h2>Flats 101 / 102 / 103</h2>
+            <p>
+              This 3D dollhouse follows the supplied 1st-to-3rd floor brochure layout. Click a room,
+              balcony, lobby, stair or fire lift to see its source-backed identity and dimensions.
+            </p>
+            <div className="twin-unit-list">
+              <button type="button" onClick={() => setSelectedFeature({ id: "101", label: "Flat 101 to 501", category: "2BHK", description: "972 sq.ft. brochure-backed unit series." })}>
+                <span>Flat 101 to 501</span><strong>2BHK</strong><b>972 sq.ft.</b>
+              </button>
+              <button type="button" onClick={() => setSelectedFeature({ id: "102", label: "Flat 102 to 502", category: "2BHK", description: "949 sq.ft. brochure-backed unit series." })}>
+                <span>Flat 102 to 502</span><strong>2BHK</strong><b>949 sq.ft.</b>
+              </button>
+              <button type="button" onClick={() => setSelectedFeature({ id: "103", label: "Flat 103 to 403", category: "2BHK", description: "940 sq.ft. brochure-backed unit series." })}>
+                <span>Flat 103 to 403</span><strong>2BHK</strong><b>940 sq.ft.</b>
+              </button>
+            </div>
+          </aside>
         )}
 
         {mode === "units" && (
