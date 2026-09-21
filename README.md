@@ -148,3 +148,20 @@ Completed in this milestone:
 - brochure-backed unit selection and area display
 
 Exact unit-to-mesh binding remains intentionally gated when the supplied source model does not expose reliable semantic unit IDs. See [docs/JYOTI-PARADISE-REALISTIC-PHASE-1-3.md](./docs/JYOTI-PARADISE-REALISTIC-PHASE-1-3.md).
+
+
+## Jyoti Paradise — reference digital twin
+
+Jyoti Paradise now has a project-specific full-screen digital twin presentation based on the supplied reference-video direction:
+
+- aerial Project Navigation
+- Building Explorer
+- exploded / focused Floor Explorer
+- brochure-backed Unit Explorer
+- Amenities context
+- Balcony camera
+- Distance & Context view
+
+Walkthrough remains available as a secondary inspection mode. The dedicated shell is isolated to the `jyoti-paradise` project slug; other Engine tenants keep the generic UI.
+
+See [docs/JYOTI-PARADISE-REFERENCE-DIGITAL-TWIN.md](./docs/JYOTI-PARADISE-REFERENCE-DIGITAL-TWIN.md).

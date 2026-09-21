@@ -9,6 +9,7 @@ import { createFloorExploder, enhanceArchitecturalModel } from "./realism";
 import { clampWalkPosition, walkDelta, walkStartPosition, type WalkDirection } from "./walkthrough";
 
 type ViewerMode = "booting" | "loading" | "model" | "demo" | "error";
+type PresentationView = "default" | "aerial" | "building" | "top" | "balcony" | "context";
 
 interface Viewer3DProps {
   modelUrl?: string;
@@ -17,6 +18,10 @@ interface Viewer3DProps {
   interactionMode?: "section" | "detail";
   initialWalk?: boolean;
   initialWalkFloor?: number | null;
+  presentationView?: PresentationView;
+  initialFloor?: number | null;
+  initialExploded?: boolean;
+  compactUi?: boolean;
 }
 
 interface HomeView {
@@ -179,6 +184,10 @@ export function Viewer3D({
   interactionMode,
   initialWalk = false,
   initialWalkFloor = null,
+  presentationView = "default",
+  initialFloor = null,
+  initialExploded = false,
+  compactUi = false,
 }: Viewer3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const resetRef = useRef<(() => void) | null>(null);
@@ -192,10 +201,10 @@ export function Viewer3D({
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
+  const [selectedFloor, setSelectedFloor] = useState<number | null>(initialFloor);
   const [sectionEnabled, setSectionEnabled] = useState(interactionMode === "section");
   const [nightMode, setNightMode] = useState(false);
-  const [exploded, setExploded] = useState(false);
+  const [exploded, setExploded] = useState(initialExploded);
   const [walkMode, setWalkMode] = useState(false);
 
   useEffect(() => {
@@ -455,6 +464,64 @@ export function Viewer3D({
           ? applyPreset(cameraPreset, camera, controls)
           : fitCamera(object, camera, controls);
 
+      const bounds = modelBounds;
+      const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+      const sizeForView = bounds.getSize(new THREE.Vector3());
+      const centerForView = sphere.center.clone();
+      const radiusForView = Math.max(sphere.radius, 1);
+      const setView = (view: PresentationView) => {
+        controls.enabled = true;
+        if (view === "aerial") {
+          camera.position.set(
+            centerForView.x + radiusForView * 1.65,
+            centerForView.y + radiusForView * 1.45,
+            centerForView.z + radiusForView * 1.65,
+          );
+          controls.target.copy(centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)));
+          camera.fov = 36;
+        } else if (view === "top") {
+          camera.position.set(centerForView.x, bounds.max.y + radiusForView * 1.55, centerForView.z + radiusForView * 0.06);
+          controls.target.copy(centerForView);
+          camera.fov = 34;
+        } else if (view === "balcony") {
+          camera.position.set(
+            bounds.max.x + radiusForView * 0.45,
+            bounds.min.y + sizeForView.y * 0.62,
+            bounds.max.z + radiusForView * 0.28,
+          );
+          controls.target.set(centerForView.x, bounds.min.y + sizeForView.y * 0.52, centerForView.z);
+          camera.fov = 38;
+        } else if (view === "context") {
+          camera.position.set(
+            centerForView.x + radiusForView * 2.25,
+            centerForView.y + radiusForView * 1.2,
+            centerForView.z + radiusForView * 2.25,
+          );
+          controls.target.copy(centerForView);
+          camera.fov = 42;
+        } else if (view === "building") {
+          camera.position.set(
+            centerForView.x + radiusForView * 1.15,
+            centerForView.y + radiusForView * 0.58,
+            centerForView.z + radiusForView * 1.15,
+          );
+          controls.target.copy(centerForView.clone().add(new THREE.Vector3(0, sizeForView.y * 0.08, 0)));
+          camera.fov = 39;
+        } else {
+          return;
+        }
+        camera.updateProjectionMatrix();
+        controls.update();
+      };
+      setView(presentationView);
+
+      if (initialExploded) {
+        floorExploder?.setExploded(true);
+      }
+      if (initialFloor !== null) {
+        applyFloor(initialFloor);
+      }
+
       if (interactionMode === "detail") {
         const sphere = modelBounds.getBoundingSphere(new THREE.Sphere());
         const direction = new THREE.Vector3(1, 0.25, 1).normalize();
@@ -573,7 +640,7 @@ export function Viewer3D({
       walkModeRef.current = null;
       walkStepRef.current = null;
     };
-  }, [modelUrl, cameraPreset, interactionMode, initialWalk, initialWalkFloor]);
+  }, [modelUrl, cameraPreset, interactionMode, initialWalk, initialWalkFloor, presentationView, initialFloor, initialExploded]);
 
   useEffect(() => {
     const update = () => {
@@ -606,7 +673,7 @@ export function Viewer3D({
 
   return (
     <div className="viewer-shell" ref={hostRef}>
-      <div className="viewer-toolbar" aria-label="3D viewer controls">
+      {!compactUi && <div className="viewer-toolbar" aria-label="3D viewer controls">
         <span className={`viewer-status viewer-status--${mode}`}>
           <i aria-hidden="true" />
           {statusLabel}
@@ -678,9 +745,9 @@ export function Viewer3D({
             {isFullscreen ? "Exit" : "Full screen"}
           </button>
         </div>
-      </div>
+      </div>}
 
-      <div className="viewer-floor-controls" aria-label="Building floor selector">
+      {!compactUi && <div className="viewer-floor-controls" aria-label="Building floor selector">
         <button
           type="button"
           className={selectedFloor === null ? "viewer-floor viewer-floor--active" : "viewer-floor"}
@@ -712,7 +779,7 @@ export function Viewer3D({
             {floor === 0 ? "Ground" : `F${floor}`}
           </button>
         ))}
-      </div>
+      </div>}
 
       {walkMode && (
         <div className="viewer-walk-controls" aria-label="Walkthrough movement controls">
@@ -744,9 +811,9 @@ export function Viewer3D({
         </div>
       )}
 
-      <div className="viewer-help" aria-hidden="true">
+      {!compactUi && <div className="viewer-help" aria-hidden="true">
 {walkMode ? "Walk: drag to look · WASD/arrow keys or on-screen arrows to move" : "Drag to rotate · Two-finger/secondary drag to pan · Pinch or wheel to zoom"}
-      </div>
+      </div>}
     </div>
   );
 }
