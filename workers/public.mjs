@@ -123,7 +123,7 @@ async function getProjectExperience(env, slug) {
       mimeType: model.mime_type || "model/gltf-binary",
       available,
       url: available
-        ? `${BASE_PATH}/api/models/${encodeURIComponent(model.id)}/content`
+        ? `${BASE_PATH}/api/models/${encodeURIComponent(model.id)}/content?v=${encodeURIComponent(String(model.version || 1))}`
         : undefined,
     };
   }
