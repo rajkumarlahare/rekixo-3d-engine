@@ -124,8 +124,11 @@ jobs:
               && [ "$API_STATUS" = "200" ] \
               && grep -Fq '"slug":"jyoti-paradise"' "$API" \
               && grep -Fq '"id":"model_jyoti_exterior_v1"' "$API" \
+              && grep -Fq '"type":"site-map"' "$API" \
               && grep -Fq '"type":"typical-floor"' "$API" \
               && grep -Fq '"type":"amenity"' "$API" \
+              && grep -Fq '"type":"section"' "$API" \
+              && grep -Fq '"type":"balcony"' "$API" \
               && [ "$ASSET_STATUS" = "200" ] \
               && [[ "$ASSET_TYPE" == *javascript* ]]; then
               echo "Public 3D project data, modules and JavaScript verified."

@@ -6,6 +6,7 @@ export type Project3DStatus = "draft" | "published" | "archived";
 
 export type Scene3DType =
   | "project-navigation"
+  | "site-map"
   | "section"
   | "wing-distance"
   | "balcony"

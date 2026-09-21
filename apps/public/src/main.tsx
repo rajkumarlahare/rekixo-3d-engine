@@ -14,6 +14,16 @@ import "./styles.css";
 type UnitFact = { series: string; type: string; areaSqFt: number };
 type NearbyFact = { name: string; distance: string };
 
+type LocationSettings = {
+  status?: string;
+  title?: string;
+  subtitle?: string;
+  projectLabel?: string;
+  mapQuery?: string;
+  nearby?: NearbyFact[];
+  note?: string;
+};
+
 type ProjectSettings = {
   status?: string;
   headline?: string;
@@ -42,12 +52,12 @@ type PendingSettings = {
 };
 
 const moduleOrder: Array<[Scene3DType, string]> = [
-  ["project-navigation", "Project Navigation"],
-  ["typical-floor", "Typical Floor"],
+  ["project-navigation", "3D Building"],
+  ["site-map", "Location Map"],
+  ["typical-floor", "Floor Explorer"],
   ["amenity", "Amenities"],
-  ["section", "Section View"],
-  ["wing-distance", "Wing Distance"],
-  ["balcony", "Balcony View"],
+  ["section", "Section Cut"],
+  ["balcony", "Facade Detail"],
 ];
 
 function sceneOf(experience: Public3DExperience, type: Scene3DType) {
@@ -140,32 +150,132 @@ function ProjectNavigation({ experience }: { experience: Public3DExperience }) {
   );
 }
 
+function unitNumberForFloor(series: string, floor: number) {
+  const match = series.match(/^(\d{3})\s+to\s+(\d{3})$/i);
+  if (!match) return series;
+  const start = Number(match[1]);
+  const end = Number(match[2]);
+  const candidate = floor * 100 + (start % 100);
+  return candidate >= start && candidate <= end ? String(candidate) : null;
+}
+
 function TypicalFloor({ experience }: { experience: Public3DExperience }) {
   const scene = sceneOf(experience, "typical-floor");
   const settings = settingsOf<FloorSettings>(scene);
   const floorPlan = mediaUrl(experience, settings.mediaKey);
   const units = settings.units ?? [];
+  const [floor, setFloor] = useState(1);
+  const visibleUnits = units
+    .map((unit) => ({ ...unit, number: unitNumberForFloor(unit.series, floor) }))
+    .filter((unit) => unit.number);
 
   return (
     <section className="content-module">
       <div className="module-copy">
-        <p className="eyebrow">FLOOR INFORMATION</p>
+        <p className="eyebrow">FLOOR EXPLORER</p>
         <h2>{settings.title ?? "Typical Floor"}</h2>
-        <p>Floor and unit information shown here comes from this project's configured scene data.</p>
+        <p>Select a floor to view the unit numbers supported by the supplied brochure data.</p>
+      </div>
+      <div className="floor-selector" aria-label="Select floor">
+        {[1,2,3,4,5].map((item) => (
+          <button
+            type="button"
+            key={item}
+            className={floor === item ? "floor-button floor-button--active" : "floor-button"}
+            onClick={() => setFloor(item)}
+          >
+            Floor {item}
+          </button>
+        ))}
       </div>
       <div className="floor-layout">
         <MediaImage src={floorPlan} alt={`${experience.project.name} floor plan`} className="floor-plan-image" />
         <div className="unit-grid">
-          {units.map((unit) => (
+          {visibleUnits.map((unit) => (
             <article className="unit-card" key={unit.series}>
-              <span>FLAT SERIES</span>
-              <strong>{unit.series}</strong>
+              <span>FLAT</span>
+              <strong>{unit.number}</strong>
               <p>{unit.type}</p>
               <b>{unit.areaSqFt.toLocaleString("en-IN")} Sq. Ft.</b>
+              <small>Series {unit.series}</small>
+            </article>
+          ))}
+          {!visibleUnits.length && (
+            <div className="media-placeholder">
+              <strong>No brochure-listed unit for this floor</strong>
+              <span>The viewer does not invent unit numbers that are absent from the supplied project source.</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LocationMap({ experience }: { experience: Public3DExperience }) {
+  const settings = settingsOf<LocationSettings>(sceneOf(experience, "site-map"));
+  const nearby = settings.nearby ?? [];
+  const query = settings.mapQuery || [experience.project.name, experience.project.location].filter(Boolean).join(" ");
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+
+  return (
+    <section className="content-module location-module">
+      <div className="module-copy">
+        <p className="eyebrow">LOCATION CONTEXT</p>
+        <h2>{settings.title ?? "Project Location"}</h2>
+        <p>{settings.subtitle ?? "Brochure-based connectivity overview for the project."}</p>
+      </div>
+
+      <div className="location-board">
+        <div className="location-center">
+          <span>PROJECT</span>
+          <strong>{settings.projectLabel ?? experience.project.name}</strong>
+          <small>{experience.project.location}</small>
+        </div>
+        <div className="location-spokes">
+          {nearby.map((item, index) => (
+            <article key={item.name} style={{ "--slot": index } as React.CSSProperties}>
+              <strong>{item.name}</strong>
+              <span>{item.distance}</span>
             </article>
           ))}
         </div>
       </div>
+
+      <div className="location-actions">
+        <a href={mapsUrl} target="_blank" rel="noopener noreferrer">Open location search in Maps</a>
+        <span>{settings.note ?? "Distances shown are taken from the supplied brochure; the diagram is a connectivity overview, not a surveyed map."}</span>
+      </div>
+    </section>
+  );
+}
+
+function ModelModule({
+  experience,
+  type,
+  title,
+  interactionMode,
+}: {
+  experience: Public3DExperience;
+  type: Scene3DType;
+  title: string;
+  interactionMode?: "section" | "detail";
+}) {
+  const scene = sceneOf(experience, type);
+  const settings = settingsOf<PendingSettings>(scene);
+  return (
+    <section className="viewer-section">
+      <div className="module-copy model-module-copy">
+        <p className="eyebrow">INTERACTIVE 3D</p>
+        <h2>{title}</h2>
+        <p>{settings.reason ?? "Use the model controls to inspect this project view."}</p>
+      </div>
+      <Viewer3D
+        modelUrl={experience.model?.available ? experience.model.url : undefined}
+        cameraPreset={experience.camera}
+        modelLabel={experience.model?.name}
+        interactionMode={interactionMode}
+      />
     </section>
   );
 }
@@ -286,8 +396,15 @@ function App() {
 
       <div className="module-stage" key={activeType}>
         {activeType === "project-navigation" && <ProjectNavigation experience={experience} />}
+        {activeType === "site-map" && <LocationMap experience={experience} />}
         {activeType === "typical-floor" && <TypicalFloor experience={experience} />}
         {activeType === "amenity" && <Amenities experience={experience} />}
+        {activeType === "section" && activeReady && (
+          <ModelModule experience={experience} type="section" title="Interactive Section Cut" interactionMode="section" />
+        )}
+        {activeType === "balcony" && activeReady && (
+          <ModelModule experience={experience} type="balcony" title="Facade & Balcony Detail" interactionMode="detail" />
+        )}
         {!activeReady && <PendingModule type={activeType} experience={experience} />}
       </div>
 
