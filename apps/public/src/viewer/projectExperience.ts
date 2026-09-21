@@ -303,18 +303,18 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
   addFeature(siteRoot, features, plot, "plot", "Project Plot", "Site", "The shaped project parcel around the building.");
 
   const lawn = box([spanX * 1.75, 0.12, spanZ * 1.72], standard(0x4e8d48, 0.97), [center.x, baseY + 0.01, center.z]);
-  addFeature(siteRoot, features, lawn, "garden", "Garden", "Landscaped green area with trees, flowers and seating.");
+  addFeature(siteRoot, features, lawn, "garden", "Garden", "Landscape", "Landscaped green area with trees, flowers and seating.");
 
   const drive = box([spanX * 2.2, 0.08, Math.max(spanZ * 0.35, 4.8)], standard(0x2d3339, 0.96), [center.x, baseY + 0.06, bounds.max.z + spanZ * 0.55]);
-  addFeature(siteRoot, features, drive, "road", "Road & Entry", "Front approach road and project entrance.");
+  addFeature(siteRoot, features, drive, "road", "Road & Entry", "Access", "Front approach road and project entrance.");
 
   const pool = makePool(Math.max(spanX * 0.65, 5), Math.max(spanZ * 0.42, 3.4));
   pool.position.set(bounds.max.x + spanX * 0.62, baseY + 0.1, center.z - spanZ * 0.05);
-  addFeature(siteRoot, features, pool, "pool", "Swimming Pool", "Colorful pool deck with water and lounge area.");
+  addFeature(siteRoot, features, pool, "pool", "Swimming Pool", "Amenity", "Colorful pool deck with water and lounge area.");
 
   const flower = makeFlowerBed(Math.max(spanX * 0.72, 5), 1.25);
   flower.position.set(center.x, baseY + 0.08, bounds.max.z + spanZ * 0.18);
-  addFeature(siteRoot, features, flower, "flowers", "Flower Garden", "Front landscaped flower bed.");
+  addFeature(siteRoot, features, flower, "flowers", "Flower Garden", "Landscape", "Front landscaped flower bed.");
 
   if (!mobile) {
     for (const [px, pz, scale] of [
@@ -346,7 +346,7 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean) {
     box([spanX * 0.62, 1.25, 0.22], wallMaterial, [center.x + spanX * 0.69, baseY + 0.62, frontZ]),
   );
   const gate = box([spanX * 0.52, 1.6, 0.12], standard(0x493c35, 0.48, 0.26), [center.x, baseY + 0.8, frontZ]);
-  addFeature(siteRoot, features, gate, "gate", "Main Gate", "Main project entry gate.");
+  addFeature(siteRoot, features, gate, "gate", "Main Gate", "Access", "Main project entry gate.");
 
   const interiorWidth = Math.min(Math.max(spanX * 0.75, 7.2), 11.5);
   const interiorDepth = Math.min(Math.max(spanZ * 0.7, 6.2), 9.2);
