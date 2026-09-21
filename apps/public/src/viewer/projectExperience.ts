@@ -275,14 +275,14 @@ function makeBrochureTypicalFloor(features: ExperienceFeature[]) {
   // FLAT 101 - brochure: Living 4.954x3.050, Kitchen 3.279x2.196,
   // Dining 1.265x1.023, bedrooms 3.679x3.153 and 3.500x3.701.
   addLowRoom(root, features, "101-living", "Living 4.954 x 3.050", "101-501", [4.95, 3.05], [-3.25, 0.6], cream, "Brochure-backed Flat 101-501 living room.");
-  addLowRoom(root, features, "101-kitchen", "Kitchen 3.279 x 2.196", "101-501", [3.28, 2.2], [-4.25, 3.18], kitchenFloor, "Brochure-backed modular kitchen.");
+  addLowRoom(root, features, "101-kitchen", "Kitchen 3.379 x 2.196", "101-501", [3.38, 2.2], [-4.25, 3.18], kitchenFloor, "Brochure-backed modular kitchen.");
   addLowRoom(root, features, "101-dining", "Dining 1.265 x 1.023", "101-501", [1.27, 1.03], [-1.78, 3.12], cream, "Brochure-backed dining space.");
   addLowRoom(root, features, "101-bed-a", "Bed Room 3.679 x 3.153", "101-501", [3.68, 3.15], [-4.15, 5.92], cream, "Brochure-backed bedroom.");
-  addLowRoom(root, features, "101-bed-b", "Bed Room 3.500 x 3.701", "101-501", [3.5, 3.7], [-0.65, 6.05], cream, "Brochure-backed bedroom.");
+  addLowRoom(root, features, "101-bed-b", "Bed Room 3.506 x 3.761", "101-501", [3.51, 3.76], [-0.65, 6.05], cream, "Brochure-backed bedroom.");
   addLowRoom(root, features, "101-toilet-a", "Toilet 1.20 x 2.13", "101-501", [1.2, 2.13], [-1.25, 4.25], bath, "Brochure-backed toilet.");
   addLowRoom(root, features, "101-toilet-b", "Toilet 2.542 x 1.565", "101-501", [2.54, 1.57], [-4.45, 8.35], bath, "Brochure-backed toilet.");
   addBalcony(root, features, "101-balcony", "Balcony 1.416", "101-501", [1.42, 2.85], [-6.45, 0.72]);
-  addBalcony(root, features, "101-wbal", "W. Bal 1.085", "101-501", [1.09, 2.0], [-6.38, 3.33]);
+  addBalcony(root, features, "101-wbal", "W. Bal 1.065", "101-501", [1.07, 2.0], [-6.38, 3.33]);
 
   addSofa(root, -3.05, 0.4, 2.35, 0);
   addKitchen(root, -4.45, 3.1, 2.65, 0);
@@ -295,10 +295,10 @@ function makeBrochureTypicalFloor(features: ExperienceFeature[]) {
   // FLAT 102 - brochure: Living 4.828x3.050, Kitchen 3.416x2.155,
   // Dining 1.415x1.023, toilet 1.30x2.132. Mirrored around the central duct.
   addLowRoom(root, features, "102-living", "Living 4.828 x 3.050", "102-502", [4.83, 3.05], [3.25, 0.6], cream, "Brochure-backed Flat 102-502 living room.");
-  addLowRoom(root, features, "102-kitchen", "Kitchen 3.416 x 2.155", "102-502", [3.42, 2.16], [4.25, 3.2], kitchenFloor, "Brochure-backed modular kitchen.");
+  addLowRoom(root, features, "102-kitchen", "Kitchen 3.516 x 2.155", "102-502", [3.52, 2.16], [4.25, 3.2], kitchenFloor, "Brochure-backed modular kitchen.");
   addLowRoom(root, features, "102-dining", "Dining 1.415 x 1.023", "102-502", [1.42, 1.03], [1.73, 3.12], cream, "Brochure-backed dining space.");
-  addLowRoom(root, features, "102-bed-a", "Bed Room", "102-502", [3.45, 3.25], [4.22, 5.95], cream, "Bedroom placement follows the supplied floor-plan render.");
-  addLowRoom(root, features, "102-bed-b", "Bed Room", "102-502", [3.55, 3.4], [0.78, 6.03], cream, "Bedroom placement follows the supplied floor-plan render.");
+  addLowRoom(root, features, "102-bed-a", "Bed Room 3.383 x 3.761", "102-502", [3.38, 3.76], [4.22, 5.95], cream, "Bedroom placement follows the supplied floor-plan render.");
+  addLowRoom(root, features, "102-bed-b", "Bed Room 3.500 x 3.204", "102-502", [3.5, 3.2], [0.78, 6.03], cream, "Bedroom placement follows the supplied floor-plan render.");
   addLowRoom(root, features, "102-toilet", "Toilet 1.30 x 2.132", "102-502", [1.3, 2.13], [1.28, 4.28], bath, "Brochure-backed toilet.");
   addBalcony(root, features, "102-balcony", "Balcony 1.40", "102-502", [1.4, 2.82], [6.3, 0.7]);
   addBalcony(root, features, "102-wbal", "W. Bal 1.140", "102-502", [1.14, 2.0], [6.28, 3.28]);
@@ -311,7 +311,7 @@ function makeBrochureTypicalFloor(features: ExperienceFeature[]) {
   addToilet(root, 1.28, 4.28, Math.PI);
 
   // Shared duct between 101/102.
-  addLowRoom(root, features, "duct", "DUCT 1.80 x 3.96", "Common", [1.8, 3.96], [0, 3.95], standard(0x9a9c9e, 0.92), "Central service duct shown on the supplied typical floor plan.");
+  addLowRoom(root, features, "duct", "DUCT 1.80 x 3.26", "Common", [1.8, 3.26], [0, 3.95], standard(0x9a9c9e, 0.92), "Central service duct shown on the supplied typical floor plan.");
 
   // Common lobby and stair block.
   addLowRoom(root, features, "lobby", "Lobby", "Common", [4.6, 2.1], [-0.25, -2.15], lobbyFloor, "Common lobby linking the three flats, staircase and fire lift.");
