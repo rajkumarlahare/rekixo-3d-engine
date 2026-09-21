@@ -124,6 +124,8 @@ jobs:
               && [ "$API_STATUS" = "200" ] \
               && grep -Fq '"slug":"jyoti-paradise"' "$API" \
               && grep -Fq '"id":"model_jyoti_exterior_v1"' "$API" \
+              && grep -Fq '"available":true' "$API" \
+              && grep -Fq '"version":2' "$API" \
               && grep -Fq '"type":"wing-distance"' "$API" \
               && grep -Fq '"type":"typical-floor"' "$API" \
               && grep -Fq '"type":"amenity"' "$API" \
@@ -131,8 +133,19 @@ jobs:
               && grep -Fq '"type":"balcony"' "$API" \
               && [ "$ASSET_STATUS" = "200" ] \
               && [[ "$ASSET_TYPE" == *javascript* ]]; then
-              echo "Public 3D project data, modules and JavaScript verified."
-              rm -f "$PAGE" "$API"
+              MODEL_PATH="$(python -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('model',{}).get('url',''))" "$API")"
+              MODEL_STATUS="000"
+              MODEL_TYPE=""
+              if [ -n "$MODEL_PATH" ]; then
+                MODEL_META="$(curl --location --silent --show-error --output /tmp/jyoti-live-model.glb --write-out '%{http_code}|%{content_type}' "${ORIGIN}${MODEL_PATH}" || true)"
+                MODEL_STATUS="${MODEL_META%%|*}"
+                MODEL_TYPE="${MODEL_META#*|}"
+              fi
+              [ "$MODEL_STATUS" = "200" ]
+              [[ "$MODEL_TYPE" == *model/gltf-binary* || "$MODEL_TYPE" == *application/octet-stream* ]]
+              test "$(head -c 4 /tmp/jyoti-live-model.glb)" = "glTF"
+              echo "Public 3D project data, modules, JavaScript and live model verified."
+              rm -f "$PAGE" "$API" /tmp/jyoti-live-model.glb
               exit 0
             fi
             echo "Attempt $attempt/5: page=$PAGE_STATUS api=$API_STATUS js=$ASSET_STATUS js_type=$ASSET_TYPE path=$ASSET_PATH"
