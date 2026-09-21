@@ -243,8 +243,8 @@ export function Viewer3D({
 
     const mobile = isMobileDevice();
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x07111d);
-    scene.fog = new THREE.FogExp2(0x07111d, 0.018);
+    scene.background = new THREE.Color(0xb8cee0);
+    scene.fog = new THREE.FogExp2(0xc4d4df, 0.006);
     let modelBounds: THREE.Box3 | undefined;
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 2000);
@@ -257,7 +257,7 @@ export function Viewer3D({
     });
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 1.28;
     renderer.shadowMap.enabled = !mobile;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.35 : 2));
@@ -281,20 +281,21 @@ export function Viewer3D({
       camera.quaternion.setFromEuler(euler);
     };
 
-    const hemi = new THREE.HemisphereLight(0xdcecff, 0x27313b, 2.4);
+    const hemi = new THREE.HemisphereLight(0xeaf5ff, 0x7d746b, 3.25);
     scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xfff4e5, 3.7);
-    sun.position.set(8, 14, 10);
+    const sun = new THREE.DirectionalLight(0xfff1dc, 4.65);
+    sun.position.set(10, 18, 12);
     sun.castShadow = renderer.shadowMap.enabled;
-    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
     sun.shadow.camera.near = 0.5;
     sun.shadow.camera.far = 80;
-    sun.shadow.bias = -0.0004;
+    sun.shadow.bias = -0.00025;
+    sun.shadow.normalBias = 0.018;
     scene.add(sun);
 
-    const fill = new THREE.DirectionalLight(0x9cc9ff, 1.1);
-    fill.position.set(-8, 6, -5);
+    const fill = new THREE.DirectionalLight(0xb8d9ff, 1.75);
+    fill.position.set(-10, 8, -7);
     scene.add(fill);
 
     const warmFill = new THREE.PointLight(0xffa35c, 0, 120, 1.5);
@@ -302,7 +303,7 @@ export function Viewer3D({
     scene.add(warmFill);
 
     const groundMaterial = new THREE.MeshStandardMaterial({
-      color: 0x0b1925,
+      color: 0x9e988f,
       roughness: 0.92,
       metalness: 0.02,
     });
@@ -315,7 +316,7 @@ export function Viewer3D({
     const pmrem = new THREE.PMREMGenerator(renderer);
     const environmentTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = environmentTexture;
-    scene.environmentIntensity = 1.08;
+    scene.environmentIntensity = 1.48;
 
     const updateSize = () => {
       const width = Math.max(hostElement.clientWidth, 1);
@@ -374,13 +375,14 @@ export function Viewer3D({
     };
 
     const applyLighting = (night: boolean) => {
-      scene.background = new THREE.Color(night ? 0x020713 : 0x07111d);
-      scene.fog = new THREE.FogExp2(night ? 0x020713 : 0x07111d, night ? 0.012 : 0.018);
-      hemi.intensity = night ? 0.75 : 2.4;
-      sun.intensity = night ? 0.9 : 3.7;
-      fill.intensity = night ? 0.55 : 1.1;
-      warmFill.intensity = night ? 16 : 0;
-      renderer.toneMappingExposure = night ? 1.18 : 1.05;
+      scene.background = new THREE.Color(night ? 0x07101f : 0xb8cee0);
+      scene.fog = new THREE.FogExp2(night ? 0x0b1422 : 0xc4d4df, night ? 0.009 : 0.006);
+      hemi.intensity = night ? 1.05 : 3.25;
+      sun.intensity = night ? 0.72 : 4.65;
+      fill.intensity = night ? 0.72 : 1.75;
+      warmFill.intensity = night ? 13 : 1.2;
+      renderer.toneMappingExposure = night ? 1.12 : 1.28;
+      scene.environmentIntensity = night ? 0.82 : 1.48;
       siteEnvironment?.setNight(night);
       projectExperience?.setNight(night);
     };
