@@ -144,9 +144,9 @@ async function getProjectExperience(env, slug) {
           id: defaultCamera.id,
           projectId: defaultCamera.project_id,
           name: defaultCamera.name,
-          position: parseJson(defaultCamera.position_json, [42, 30, 44]),
-          target: parseJson(defaultCamera.target_json, [13, 10, -14]),
-          fov: Number(defaultCamera.fov || 42),
+          position: parseJson(defaultCamera.position_json, [6, 4, 8]),
+          target: parseJson(defaultCamera.target_json, [0, 0, 0]),
+          fov: Number(defaultCamera.fov || 45),
         }
       : undefined,
     model: modelPayload,

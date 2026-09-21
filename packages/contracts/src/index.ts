@@ -1,6 +1,5 @@
 export const ADMIN_BASE_PATH = "/3Dprojects" as const;
 export const PUBLIC_BASE_PATH = "/3Dprojects" as const;
-export const FIRST_PROJECT_SLUG = "jyoti-paradise" as const;
 
 export type Project3DStatus = "draft" | "published" | "archived";
 
@@ -20,6 +19,16 @@ export interface Project3D {
   status: Project3DStatus;
   coverAssetKey?: string;
   defaultSceneId?: string;
+}
+
+export interface EngineProjectSummary extends Project3D {
+  modelCount?: number;
+  sceneCount?: number;
+  enabledSceneCount?: number;
+}
+
+export interface AdminProjectsResponse {
+  projects: EngineProjectSummary[];
 }
 
 export interface CameraPreset3D {

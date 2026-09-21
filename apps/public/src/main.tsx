@@ -1,22 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
-  FIRST_PROJECT_SLUG,
   PUBLIC_BASE_PATH,
   type Public3DExperience,
   type Scene3D,
   type Scene3DType,
 } from "@rekixo/3d-contracts";
+import { projectSlugFromPathname } from "@rekixo/3d-engine-core";
 import { loadPublicExperience } from "./api";
 import { Viewer3D } from "./viewer/Viewer3D";
 import "./styles.css";
-
-function currentSlug() {
-  const prefix = `${PUBLIC_BASE_PATH}/`;
-  const pathname = window.location.pathname;
-  if (!pathname.startsWith(prefix)) return "";
-  return decodeURIComponent(pathname.slice(prefix.length).split("/")[0] || "");
-}
 
 type UnitFact = { series: string; type: string; areaSqFt: number };
 type NearbyFact = { name: string; distance: string };
@@ -76,8 +69,8 @@ function MediaImage({ src, alt, className }: { src?: string; alt: string; classN
   if (!src || failed) {
     return (
       <div className={`media-placeholder ${className ?? ""}`}>
-        <strong>Media prepared</strong>
-        <span>Upload the generated production asset to Rekixo 3D storage to publish it here.</span>
+        <strong>Media unavailable</strong>
+        <span>This project module does not currently have a published media asset.</span>
       </div>
     );
   }
@@ -106,7 +99,7 @@ function NotFound({ message }: { message?: string }) {
 }
 
 function ProjectNavigation({ experience }: { experience: Public3DExperience }) {
-  const { model, camera } = experience;
+  const { model, camera, project } = experience;
   const settings = settingsOf<ProjectSettings>(sceneOf(experience, "project-navigation"));
   const render = mediaUrl(experience, settings.exteriorRenderKey);
 
@@ -123,25 +116,25 @@ function ProjectNavigation({ experience }: { experience: Public3DExperience }) {
       <section className="project-overview">
         <div className="overview-copy">
           <p className="eyebrow">PROJECT OVERVIEW</p>
-          <h2>{settings.headline ?? "2 BHK Flats"}</h2>
+          <h2>{settings.headline ?? project.name}</h2>
           <p>
-            Jyoti Paradise is presented from the supplied project model, brochure,
-            first-floor drawing and approved exterior reference. Interactive modules
-            only publish facts available in the supplied source package.
+            This experience is generated from the verified models, scenes and media
+            configured for this project. Modules are published only when their
+            project-scoped source data is available.
           </p>
           <div className="fact-row">
-            <div><span>Brochure offer</span><strong>{settings.brochurePrice ?? "₹34 Lakh"}</strong></div>
-            <div><span>Location</span><strong>{experience.project.location ?? "Hingna, Nagpur"}</strong></div>
-            <div><span>Model</span><strong>{model?.available ? "Live 3D" : "Web asset ready"}</strong></div>
+            {settings.brochurePrice && <div><span>Project offer</span><strong>{settings.brochurePrice}</strong></div>}
+            <div><span>Location</span><strong>{project.location ?? "Location not provided"}</strong></div>
+            <div><span>Model</span><strong>{model?.available ? "Live 3D" : "3D asset pending"}</strong></div>
           </div>
         </div>
-        <MediaImage src={render} alt="Jyoti Paradise exterior architectural render" className="exterior-reference" />
+        <MediaImage src={render} alt={`${project.name} exterior reference`} className="exterior-reference" />
       </section>
 
       <section className="source-note">
         <span>MODEL STATUS</span>
-        <strong>{model?.available ? `${model.name} · v${model.version}` : "Converted web GLB ready for storage upload"}</strong>
-        <p>{settings.modelNote ?? "The supplied FBX geometry is supported; exact external texture images were not included in the source package."}</p>
+        <strong>{model?.available ? `${model.name} · v${model.version}` : "No active web model is currently available"}</strong>
+        <p>{settings.modelNote ?? "Project model metadata and web assets are managed independently for this 3D project."}</p>
       </section>
     </>
   );
@@ -156,12 +149,12 @@ function TypicalFloor({ experience }: { experience: Public3DExperience }) {
   return (
     <section className="content-module">
       <div className="module-copy">
-        <p className="eyebrow">SUPPLIED FLOOR PLAN</p>
+        <p className="eyebrow">FLOOR INFORMATION</p>
         <h2>{settings.title ?? "Typical Floor"}</h2>
-        <p>The unit series and areas below are reproduced from the supplied Jyoti Paradise brochure.</p>
+        <p>Floor and unit information shown here comes from this project's configured scene data.</p>
       </div>
       <div className="floor-layout">
-        <MediaImage src={floorPlan} alt="Jyoti Paradise supplied floor plan" className="floor-plan-image" />
+        <MediaImage src={floorPlan} alt={`${experience.project.name} floor plan`} className="floor-plan-image" />
         <div className="unit-grid">
           {units.map((unit) => (
             <article className="unit-card" key={unit.series}>
@@ -182,9 +175,9 @@ function Amenities({ experience }: { experience: Public3DExperience }) {
   return (
     <section className="content-module">
       <div className="module-copy">
-        <p className="eyebrow">BROCHURE INFORMATION</p>
+        <p className="eyebrow">PROJECT INFORMATION</p>
         <h2>Amenities & nearby locations</h2>
-        <p>Only items printed in the supplied brochure are shown here.</p>
+        <p>Only amenities and nearby locations configured for this project are shown.</p>
       </div>
       <div className="amenity-columns">
         <div>
@@ -213,15 +206,15 @@ function PendingModule({ type, experience }: { type: Scene3DType; experience: Pu
   const label = moduleOrder.find(([item]) => item === type)?.[1] ?? "Module";
   return (
     <section className="content-module pending-module">
-      <p className="eyebrow">SOURCE CONTROLLED</p>
+      <p className="eyebrow">PROJECT MODULE</p>
       <h2>{label}</h2>
-      <p>{settings.reason ?? "A verified source asset for this module was not included in the supplied project files, so Rekixo does not fabricate it."}</p>
+      <p>{settings.reason ?? "This module is not currently enabled for the selected 3D project."}</p>
     </section>
   );
 }
 
 function App() {
-  const slug = useMemo(currentSlug, []);
+  const slug = useMemo(() => projectSlugFromPathname(window.location.pathname), []);
   const [experience, setExperience] = useState<Public3DExperience>();
   const [error, setError] = useState<string>();
   const [attempt, setAttempt] = useState(0);
@@ -300,7 +293,7 @@ function App() {
 
       <footer>
         <span>AR3D Studio · Rekixo AR3D Engine</span>
-        <span>{PUBLIC_BASE_PATH}/{FIRST_PROJECT_SLUG}</span>
+        <span>{PUBLIC_BASE_PATH}/{experience.project.slug}</span>
       </footer>
     </main>
   );

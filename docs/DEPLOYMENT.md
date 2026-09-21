@@ -1,31 +1,17 @@
 # Rekixo AR3D Engine Deployment
 
-Deployment is intentionally GitHub-Actions-first, matching the existing Rekixo/Tiyansh operating model.
-
-Repository rename target: `rekixo-ar3d-engine`. The existing D1, R2, Worker and route names below are stable production identifiers and are intentionally not renamed.
-
-## Normal developer flow
-
-From Termux or any Git client:
-
-```bash
-git add .
-git commit -m "..."
-git push
-```
-
-After changes are merged to `main`, GitHub Actions performs the production deployment on an Ubuntu runner. Local Termux does **not** need Wrangler or workerd.
+Deployment is GitHub-Actions-first. Existing D1, R2, Worker and route names are stable production identifiers and are intentionally not renamed.
 
 ## Production resources
 
-Only the isolated 3D resources are targeted:
+Only isolated 3D resources are targeted:
 
 - D1: `rekixo-3d-production`
 - R2: `rekixo-3d-assets`
 - Admin Worker: `rekixo-3d-admin`
 - Public Worker: `rekixo-3d-public`
 
-Existing `tiyansh-production`, `tiyansh-gallery-production`, the old Super Admin, and `/projects/*` are not deployment targets of this repository.
+The sibling Platform resources `tiyansh-production`, `tiyansh-gallery-production`, `/admin`, and `/projects/*` are not Engine deployment targets.
 
 ## Production routes
 
@@ -39,53 +25,42 @@ Public:
 - `https://ar3dstudio.in/3Dprojects`
 - `https://ar3dstudio.in/3Dprojects/*`
 
-These are path-specific Worker Routes. They do not take over the full host.
+These are path-specific Worker Routes; there is no host-wide takeover.
 
-## One-time GitHub secret
-
-This repository requires one Actions secret:
-
-`CLOUDFLARE_API_TOKEN`
-
-Create it in:
-
-`Repository > Settings > Secrets and variables > Actions > New repository secret`
-
-Recommended token permissions for the current workflow:
-
-### Account permissions
-
-- D1: Edit
-- Workers R2 Storage: Edit
-- Workers Scripts: Edit
-
-### Zone permissions
-
-- Workers Routes: Edit
-- Zone: Read
-
-Scope the zone permissions to:
-
-- `rekixo.com`
-- `ar3dstudio.in`
-
-The Cloudflare account ID is non-secret deployment metadata and is already fixed in the workflow for this isolated account.
-
-## What the workflow does
+## Deployment workflow
 
 On every push to `main`:
 
 1. checkout repository
-2. use Node.js 22 on Ubuntu
+2. use Node.js 22
 3. install dependencies
-4. run TypeScript checks
-5. build admin and public apps
-6. apply D1 migrations to `rekixo-3d-production`
-7. create `rekixo-3d-assets` if it does not already exist
-8. deploy `rekixo-3d-admin`
-9. deploy `rekixo-3d-public`
-10. verify both production routes
+4. run `npm test` (typecheck, both builds and regression tests)
+5. apply checked-in D1 migrations
+6. ensure `rekixo-3d-assets` exists
+7. deploy admin/public Workers
+8. verify the generic admin project registry
+9. verify the existing Jyoti public/admin production fixture
+
+The Jyoti checks are compatibility smoke tests only. Application code contains no first-project/default tenant.
+
+## New project provisioning
+
+Do not add a customer project through a new schema migration.
+
+Run the manual GitHub Actions workflow `Provision Rekixo AR3D Project` with:
+
+- `slug` — lowercase letters/numbers/hyphens
+- `name` — display name
+- `location` — optional
+
+The workflow writes a project-scoped **draft** row to isolated Engine D1. Re-running the same slug is safe and does not overwrite an existing project.
+
+## Cloudflare secret
+
+The repository requires `CLOUDFLARE_API_TOKEN` with the existing D1/R2/Workers deployment permissions and route access for `rekixo.com` and `ar3dstudio.in`.
 
 ## Admin security
 
-The current Phase-1 admin build is only a non-sensitive foundation shell. Before write APIs, model uploads, publishing controls, or client data are enabled, the admin route must receive an authentication gate (Cloudflare Access or the dedicated Rekixo 3D auth layer). Do not add privileged write APIs to an unauthenticated admin route.
+Stage 4 keeps the Admin HTTP surface read-only. Project discovery and status reads are allowed, but privileged upload/edit/publish APIs are not exposed.
+
+Authenticated privileged handoff belongs to Stage 5. Do not add POST/PUT/PATCH/DELETE admin APIs before that security boundary exists.

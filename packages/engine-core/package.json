@@ -1,0 +1,12 @@
+{
+  "name": "@rekixo/3d-engine-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@rekixo/3d-contracts": "*"
+  }
+}

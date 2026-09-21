@@ -363,3 +363,21 @@ footer {
     flex-direction: column;
   }
 }
+
+
+.project-select {
+  min-height: 36px;
+  max-width: 280px;
+  padding: 0 34px 0 12px;
+  border: 1px solid #2b3d55;
+  border-radius: 10px;
+  background: #0a1624;
+  color: #dce8f5;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.project-select:disabled {
+  color: #6d8099;
+}

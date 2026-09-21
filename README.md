@@ -11,27 +11,29 @@ It is a sibling of `rekixo-ar3d-platform`, not a separate product family. The re
 - Product family: **Rekixo AR3D**
 - Sibling control-plane repository: `rekixo-ar3d-platform`
 
-Repository identity cleanup does not rename the existing Cloudflare runtime resources.
+Repository identity cleanup does not rename existing Cloudflare runtime resources.
 
 ## Production surfaces
 
 - Admin: `https://admin.rekixo.com/3Dprojects`
 - Public: `https://ar3dstudio.in/3Dprojects/[slug]`
-- Current first project: `jyoti-paradise`
+- Existing production compatibility fixture: `jyoti-paradise`
 
-Jyoti Paradise is a 3D project/tenant, not the engine identity. Project-specific hard-coding is a Phase 4 generalization concern and is intentionally not mixed into this identity-only step.
+Jyoti Paradise is a normal 3D project/tenant. Stage 4 removed it as an application default; the generic runtime now discovers/selects projects from Engine D1 or from the requested public slug.
 
 ## Workspace
 
-- `apps/admin` — 3D authoring/admin application
+- `apps/admin` — dynamic read-only 3D project administration surface
 - `apps/public` — customer-facing 3D experience
-- `packages/contracts` — shared engine contracts
-- `workers/admin.mjs` — isolated admin Worker
+- `packages/contracts` — shared Engine contracts
+- `packages/engine-core` — reusable project slug/path/asset-key rules
+- `workers/admin.mjs` — isolated admin Worker and project registry/status APIs
 - `workers/public.mjs` — isolated public Worker
-- `database/migrations` — isolated 3D D1 migration history
+- `database/migrations` — immutable isolated 3D D1 migration history
+- `scripts` — controlled provisioning helpers
 - `docs` — architecture and operations
 
-Future modularization may add reusable `engine-core`, viewer, scene and asset-pipeline packages, but that physical refactor is separate from repository identity cleanup.
+Future packages such as viewer, scenes, asset-pipeline and shared UI can be extracted behind the same workspace boundary without changing project identity or storage.
 
 ## Stable production resource IDs
 
@@ -45,13 +47,25 @@ These existing infrastructure names stay unchanged:
 
 Do not rename live infrastructure just to match the GitHub repository name.
 
+## Multi-project model
+
+Projects live as data in Engine D1; they are not separate repositories or runtime copies.
+
+- Admin project registry: `/3Dprojects/api/projects`
+- Admin project status: `/3Dprojects/api/status?slug=[slug]`
+- Public project: `/3Dprojects/[slug]`
+- Public data: `/3Dprojects/api/projects/[slug]`
+- R2 project prefix: `projects/[slug]/...`
+
+New projects are provisioned as **draft** records through the controlled GitHub Actions workflow `Provision Rekixo AR3D Project`. Project creation is not encoded in new schema migrations.
+
 ## Isolation contract
 
-The sibling AR3D Platform currently uses its own production resources and routes. The 3D Engine must not bind directly to the platform D1/R2 resources.
+The sibling AR3D Platform uses its own production resources and routes. The 3D Engine must not bind directly to the platform D1/R2 resources.
 
 Later Platform ↔ Engine integration should use an explicit project-link/service contract. A shared database is not the integration boundary.
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md).
+See [ARCHITECTURE.md](./ARCHITECTURE.md) and [docs/STAGE-4-ENGINE-GENERALIZATION.md](./docs/STAGE-4-ENGINE-GENERALIZATION.md).
 
 ## Development
 
@@ -59,8 +73,6 @@ Prerequisite: Node.js `>=22.13.0`.
 
 ```bash
 npm install
-npm run typecheck
-npm run build
 npm test
 ```
 
@@ -73,22 +85,14 @@ npm run dev:public
 
 ## Production deployment
 
-Merges to `main` deploy through GitHub Actions. The workflow:
-
-1. type-checks the workspace,
-2. builds admin/public bundles,
-3. applies isolated D1 migrations,
-4. ensures the isolated R2 bucket exists,
-5. deploys admin/public Workers,
-6. verifies both production surfaces.
-
-See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md).
+Merges to `main` deploy through GitHub Actions. The workflow verifies the generalized Engine, applies only checked-in additive D1 migrations, keeps the isolated R2 bucket, deploys both Workers, verifies the generic project registry, and then verifies the existing Jyoti production compatibility fixture.
 
 ## Safety rules
 
-- Keep 3D D1/R2 isolated from the AR3D Platform.
+- Keep Engine D1/R2 isolated from the AR3D Platform.
 - Keep raw CAD/FBX/SKP/MAX production source assets out of Git.
-- Do not rewrite already-applied migration history.
-- Do not treat Jyoti Paradise as the engine identity.
-- Do not add host-wide route takeovers.
-- Protect privileged 3D write APIs before enabling them.
+- Never rewrite already-applied migration history.
+- Never treat Jyoti Paradise or any customer project as the Engine identity/default.
+- Never create a code repository per normal 3D customer project.
+- Never add host-wide route takeovers.
+- Do not expose privileged 3D HTTP write APIs before authenticated Stage 5 handoff exists.

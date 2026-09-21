@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@rekixo/3d-contracts": "*",
+    "@rekixo/3d-engine-core": "*",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "three": "0.186.0"

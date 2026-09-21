@@ -12,19 +12,13 @@ function json(value, init = {}) {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store");
-  for (const [key, item] of Object.entries(SECURITY_HEADERS)) {
-    headers.set(key, item);
-  }
+  for (const [key, item] of Object.entries(SECURITY_HEADERS)) headers.set(key, item);
   return new Response(JSON.stringify(value), { ...init, headers });
 }
 
 function parseJson(value, fallback) {
   if (typeof value !== "string") return fallback;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
+  try { return JSON.parse(value); } catch { return fallback; }
 }
 
 function addSecurityHeaders(response) {
@@ -49,15 +43,39 @@ function toAssetRequest(request) {
   return new Request(url.toString(), request);
 }
 
+async function listProjects(env) {
+  const result = await env.DB.prepare(
+    `SELECT p.id, p.slug, p.name, p.location, p.status, p.cover_asset_key,
+            COUNT(DISTINCT m.id) AS model_count,
+            COUNT(DISTINCT s.id) AS scene_count,
+            COUNT(DISTINCT CASE WHEN s.enabled = 1 THEN s.id END) AS enabled_scene_count
+       FROM projects_3d p
+       LEFT JOIN models_3d m ON m.project_id = p.id
+       LEFT JOIN scenes_3d s ON s.project_id = p.id
+      GROUP BY p.id, p.slug, p.name, p.location, p.status, p.cover_asset_key
+      ORDER BY p.created_at ASC, p.slug ASC`,
+  ).all();
+
+  return (result.results ?? []).map((project) => ({
+    id: project.id,
+    slug: project.slug,
+    name: project.name,
+    location: project.location ?? undefined,
+    status: project.status,
+    coverAssetKey: project.cover_asset_key ?? undefined,
+    modelCount: Number(project.model_count || 0),
+    sceneCount: Number(project.scene_count || 0),
+    enabledSceneCount: Number(project.enabled_scene_count || 0),
+  }));
+}
+
 async function getProjectStatus(env, slug) {
   const project = await env.DB.prepare(
     `SELECT id, slug, name, location, status, cover_asset_key
        FROM projects_3d
       WHERE slug = ?
       LIMIT 1`,
-  )
-    .bind(slug)
-    .first();
+  ).bind(slug).first();
 
   if (!project) return null;
 
@@ -68,18 +86,14 @@ async function getProjectStatus(env, slug) {
          FROM models_3d
         WHERE project_id = ?
         ORDER BY version DESC, created_at DESC`,
-    )
-      .bind(project.id)
-      .all(),
+    ).bind(project.id).all(),
     env.DB.prepare(
       `SELECT id, project_id, name, type, model_id, camera_preset_id,
               settings_json, sort_order, enabled
          FROM scenes_3d
         WHERE project_id = ?
         ORDER BY sort_order ASC, id ASC`,
-    )
-      .bind(project.id)
-      .all(),
+    ).bind(project.id).all(),
   ]);
 
   const rows = modelResult.results ?? [];
@@ -134,9 +148,7 @@ async function getProjectStatus(env, slug) {
       settings: parseJson(row.settings_json, {}),
     })),
     models,
-    activeModel: activeRow
-      ? models.find((model) => model.id === activeRow.id)
-      : undefined,
+    activeModel: activeRow ? models.find((model) => model.id === activeRow.id) : undefined,
     storage: {
       bucket: BUCKET_NAME,
       activeModelObjectAvailable: activeRow
@@ -156,21 +168,23 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    if (url.pathname === `${BASE_PATH}/api/projects`) {
+      if (request.method !== "GET") {
+        return json({ error: "Method not allowed." }, { status: 405 });
+      }
+      return json({ projects: await listProjects(env) });
+    }
+
     if (url.pathname === `${BASE_PATH}/api/status`) {
       if (request.method !== "GET") {
         return json({ error: "Method not allowed." }, { status: 405 });
       }
 
-      const slug = (url.searchParams.get("slug") || "").trim();
-      if (!slug) {
-        return json({ error: "Project slug is required." }, { status: 400 });
-      }
+      const slug = (url.searchParams.get("slug") || "").trim().toLowerCase();
+      if (!slug) return json({ error: "Project slug is required." }, { status: 400 });
 
       const status = await getProjectStatus(env, slug);
-      if (!status) {
-        return json({ error: "3D project not found." }, { status: 404 });
-      }
-
+      if (!status) return json({ error: "3D project not found." }, { status: 404 });
       return json(status);
     }
 
