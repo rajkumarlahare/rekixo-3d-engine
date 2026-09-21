@@ -10,7 +10,7 @@ test("final Jyoti product exposes only source-backed public modules", () => {
   assert.match(migration, /Interactive Section Cut/);
   assert.match(migration, /Facade & Balcony Detail/);
   assert.match(migration, /No interior balcony panorama is claimed/);
-  assert.match(migration, /not-applicable/);
+  assert.match(migration, /Location Map/);
 });
 
 test("public UI contains location map and floor explorer without inventing unit numbers", () => {
@@ -30,7 +30,8 @@ test("viewer supports floor isolation, section cut and day-night modes", () => {
   assert.match(viewer, /Ground/);
 });
 
-test("site map contract is part of the generic Engine contract", () => {
+test("location module stays inside the existing Engine scene contract", () => {
   const contracts = read("packages/contracts/src/index.ts");
-  assert.match(contracts, /\| "site-map"/);
+  assert.match(contracts, /\| "wing-distance"/);
+  assert.doesNotMatch(contracts, /\| "site-map"/);
 });
