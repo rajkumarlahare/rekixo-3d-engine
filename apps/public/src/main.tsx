@@ -31,6 +31,12 @@ type ProjectSettings = {
   exteriorRenderKey?: string;
   brochureCoverKey?: string;
   modelNote?: string;
+  presentation?: {
+    style?: string;
+    primaryNavigation?: string;
+    modes?: string[];
+    walkthroughRole?: string;
+  };
 };
 
 type FloorSettings = {
@@ -602,7 +608,10 @@ function App() {
     );
   }
   if (!experience) return <LoadingPage />;
-  if (experience.project.slug === "jyoti-paradise") return <JyotiDigitalTwin experience={experience} />;
+  const presentation = settingsOf<ProjectSettings>(sceneOf(experience, "project-navigation")).presentation;
+  if (presentation?.style === "premium-real-estate-digital-twin") {
+    return <JyotiDigitalTwin experience={experience} />;
+  }
 
   const sceneMap = new Map((experience.scenes ?? []).map((scene) => [scene.type, scene]));
   const activeScene = sceneMap.get(activeType);
