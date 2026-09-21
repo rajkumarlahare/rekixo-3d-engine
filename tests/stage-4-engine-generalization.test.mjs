@@ -66,11 +66,14 @@ test("future project creation is controlled provisioning, not a schema migration
 
 test("historical Jyoti migrations remain immutable compatibility history", () => {
   const migrations = fs.readdirSync("database/migrations").sort();
-  assert.deepEqual(migrations, [
+  assert.deepEqual(migrations.slice(0, 3), [
     "0001_core.sql",
     "0002_jyoti_production_viewer.sql",
     "0003_jyoti_supplied_content_v1.sql",
   ]);
+  for (const migration of migrations.slice(3)) {
+    assert.match(migration, /^000[4-9]_/, `new migrations must be additive after 0003: ${migration}`);
+  }
   assert.match(read("database/migrations/0001_core.sql"), /jyoti-paradise/);
 });
 
