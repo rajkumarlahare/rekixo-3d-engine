@@ -409,3 +409,66 @@ footer { padding-top: 24px; display: flex; justify-content: space-between; gap: 
   font-size: 11px;
   line-height: 1.55;
 }
+
+
+.viewer-walk-controls {
+  position: absolute;
+  z-index: 7;
+  left: 16px;
+  bottom: 18px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+.viewer-walk-controls > div {
+  display: flex;
+  gap: 6px;
+}
+.viewer-walk-controls button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid #31506b;
+  border-radius: 12px;
+  background: #06111de6;
+  color: #dbe8f4;
+  font-size: 18px;
+  font-weight: 900;
+  backdrop-filter: blur(12px);
+  cursor: pointer;
+}
+.viewer-walk-controls button:hover {
+  border-color: #5c7b98;
+  background: #0b1b2a;
+}
+.viewer-action:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+.unit-enter-button {
+  margin-top: 6px;
+  width: fit-content;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #2f7d5b;
+  border-radius: 11px;
+  background: #0d2a20;
+  color: #77efba;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.unit-enter-button:hover {
+  background: #113626;
+}
+
+@media (max-width: 700px) {
+  .viewer-walk-controls {
+    left: 10px;
+    bottom: 64px;
+  }
+  .viewer-walk-controls button {
+    width: 42px;
+    height: 42px;
+  }
+}
