@@ -1,0 +1,32 @@
+.viewer-room-toolbar, .viewer-compact-tools {
+  position: absolute; z-index: 20; right: 24px; top: 86px;
+  color: #f4f6f8; background: #101a26ee; border: 1px solid #ffffff38;
+  border-radius: 12px; padding: 12px; display: flex; gap: 8px;
+  pointer-events: auto; max-width: calc(100% - 130px);
+}
+.viewer-room-toolbar { width: 350px; flex-wrap: wrap; }
+.viewer-room-toolbar label { width: 100%; font-size: 14px; }
+.viewer-room-toolbar select { width: 100%; min-width: 0; }
+.viewer-room-toolbar select, .viewer-room-toolbar button, .viewer-compact-tools button {
+  min-height: 44px; font: inherit; font-size: 14px; padding: 8px 10px;
+  color: #fff; background: #25384a; border: 1px solid #ffffff40; border-radius: 7px;
+}
+.viewer-room-toolbar small { font-size: 13px; line-height: 1.4; }
+.twin-shell--interior .twin-info-panel { display: none; }
+.twin-shell--interior .twin-title-card { width: 260px; }
+.twin-shell--interior .twin-title-card p { font-size: 14px; }
+.twin-shell--interior .twin-feature-card { bottom: 90px; pointer-events: auto; }
+@media (max-width: 760px) {
+  .viewer-room-toolbar, .viewer-compact-tools { top: 76px; right: 10px; max-width: calc(100% - 82px); }
+  .viewer-room-toolbar { width: 290px; padding: 9px; }
+  .twin-shell--interior .twin-title-card { display: none; }
+  .viewer-walk-controls { left: 78px; bottom: max(100px, calc(env(safe-area-inset-bottom) + 80px)); }
+  .viewer-walk-controls button { width: 48px; height: 48px; }
+  .twin-shell--interior .twin-feature-card { display: none; }
+}
+@media (max-height: 500px) {
+  .viewer-room-toolbar small, .viewer-room-toolbar label { display: none; }
+  .viewer-room-toolbar { top: 64px; width: 260px; }
+  .twin-shell--interior .twin-title-card { display: none; }
+  .viewer-walk-controls { bottom: 60px; }
+}

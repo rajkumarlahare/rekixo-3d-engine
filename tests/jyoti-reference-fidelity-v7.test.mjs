@@ -33,10 +33,10 @@ test("premium shell exposes touch and desktop room walkthrough", () => {
 test("walk mode uses interior bounds", () => {
   const viewer = read("apps/public/src/viewer/Viewer3D.tsx");
   assert.match(viewer, /visualPreset\?: "default" \| "reference-render"/);
-  assert.match(viewer, /experienceMode === "interior" \? projectExperience : undefined/);
-  assert.match(viewer, /interiorExperience\.focus\("interior"\)\.box\.clone\(\)/);
-  assert.match(viewer, /activeWalkBounds/);
-  assert.match(viewer, /clampWalkPosition\(camera\.position, activeWalkBounds\)/);
+  assert.match(viewer, /currentExperienceMode === "interior" && projectExperience/);
+  assert.match(viewer, /walkBounds = projectExperience\.focus\("interior"\)\.box/);
+  assert.match(viewer, /camera\.position\.copy\(entry\.point\)/);
+  assert.match(viewer, /clampWalkPosition\(camera\.position, walkBounds\)/);
 });
 
 test("V7 migration records source-safe release policy", () => {

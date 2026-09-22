@@ -1,4 +1,18 @@
 import * as THREE from "three";
+import { sourceTextureData } from "./sourceTextureData";
+
+function sourceFinish(key: string, color: number, roughness: number) {
+  const material = standard(color, roughness);
+  const data = sourceTextureData[key];
+  if (data) {
+    const texture = new THREE.TextureLoader().load(data);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(3, 3);
+    material.map = texture;
+  }
+  return material;
+}
 
 export type ExperienceMode = "site" | "interior" | "terrace";
 
@@ -173,12 +187,34 @@ function addLowRoom(
   group.add(floor);
 
   const wallMat = standard(0xe8e5de, 0.86);
-  group.add(
-    box([w, wallHeight, 0.12], wallMat, [x, wallHeight / 2, z - d / 2]),
-    box([w, wallHeight, 0.12], wallMat, [x, wallHeight / 2, z + d / 2]),
-    box([0.12, wallHeight, d], wallMat, [x - w / 2, wallHeight / 2, z]),
-    box([0.12, wallHeight, d], wallMat, [x + w / 2, wallHeight / 2, z]),
-  );
+  wallMat.side = THREE.DoubleSide;
+  // Full-height walls in walk mode, cutaway walls in the plan. Door placement
+  // is reconstructed, not surveyed: keep an open 0.86m entrance on the south.
+  const doorWidth = Math.min(0.86, w * 0.65);
+  const sideWidth = (w - doorWidth) / 2;
+  const walls = [
+    box([sideWidth, 2.75, 0.12], wallMat, [x - (w + doorWidth) / 4, 1.375, z - d / 2]),
+    box([sideWidth, 2.75, 0.12], wallMat, [x + (w + doorWidth) / 4, 1.375, z - d / 2]),
+    box([doorWidth, 0.6, 0.12], wallMat, [x, 2.45, z - d / 2]),
+    box([w, 2.75, 0.12], wallMat, [x, 1.375, z + d / 2]),
+    box([0.12, 2.75, d], wallMat, [x - w / 2, 1.375, z]),
+    box([0.12, 2.75, d], wallMat, [x + w / 2, 1.375, z]),
+  ];
+  for (const wall of walls) {
+    wall.userData.walkWall = true;
+    wall.userData.fullY = wall.position.y;
+    wall.userData.cutawayHeight = wallHeight;
+    group.add(wall);
+  }
+  const ceiling = box([w, 0.06, d], standard(0xf4f1e9, 0.9), [x, 2.8, z]);
+  ceiling.userData.walkCeiling = true;
+  group.add(ceiling);
+  const frameMat = standard(0x795339, 0.52);
+  for (const side of [-1, 1]) {
+    const frame = box([0.055, 2.16, 0.16], frameMat, [x + side * doorWidth / 2, 1.08, z - d / 2]);
+    frame.userData.walkCeiling = true;
+    group.add(frame);
+  }
   root.add(group);
   return { root: group, x, z, w, d };
 }
@@ -265,6 +301,7 @@ function addDining(root: THREE.Object3D, x: number, z: number, rotate = 0) {
     group.add(box([0.38, 0.58, 0.38], standard(0xc2a17f, 0.78), [cx, 0.3, cz]));
   }
   group.position.set(x, 0, z);
+  group.scale.set(0.48, 1, 0.48);
   group.rotation.y = rotate;
   root.add(group);
 }
@@ -324,9 +361,9 @@ function makeBrochureTypicalFloor(features: ExperienceFeature[]) {
   const root = new THREE.Group();
   root.name = "brochure-backed-typical-floor";
 
-  const livingFloor = standard(0xe7dfd3, 0.66);
-  const bathFloor = standard(0x74777a, 0.7);
-  const kitchenFloor = standard(0xd0c3ae, 0.68);
+  const livingFloor = sourceFinish("Marble_Carrara_Floor_Tile", 0xe7dfd3, 0.56);
+  const bathFloor = sourceFinish("Slate", 0x74777a, 0.7);
+  const kitchenFloor = sourceFinish("Basic_Tile", 0xd0c3ae, 0.62);
   const lobbyFloor = standard(0xd9d1c4, 0.74);
   const ductFloor = standard(0x96999b, 0.92);
 
@@ -335,50 +372,55 @@ function makeBrochureTypicalFloor(features: ExperienceFeature[]) {
   // common stair/lobby/fire-lift below, and 103 across the lower wing.
 
   // FLAT 101 TO 501 — brochure dimensions.
-  addLowRoom(root, features, "101-living", "Living 4.954 x 3.050", "101-501", [4.95, 3.05], [-3.35, 0.75], livingFloor, "Flat 101–501 living room from brochure page 2.", 0.72);
-  addLowRoom(root, features, "101-kitchen", "Kitchen 3.279 x 2.196", "101-501", [3.28, 2.2], [-4.25, 3.42], kitchenFloor, "Flat 101–501 kitchen from brochure page 2.", 0.72);
-  addLowRoom(root, features, "101-dining", "Dining 1.265 x 1.023", "101-501", [1.27, 1.03], [-1.92, 3.5], livingFloor, "Flat 101–501 dining from brochure page 2.", 0.72);
-  addLowRoom(root, features, "101-toilet-a", "Toilet 1.20 x 2.13", "101-501", [1.2, 2.13], [-1.5, 5.0], bathFloor, "Flat 101–501 inner toilet.", 0.72);
-  addLowRoom(root, features, "101-bed-a", "Bed Room 3.679 x 3.153", "101-501", [3.68, 3.15], [-4.5, 6.25], livingFloor, "Flat 101–501 bedroom.", 0.72);
-  addLowRoom(root, features, "101-bed-b", "Bed Room 3.500 x 3.701", "101-501", [3.5, 3.7], [-0.72, 6.55], livingFloor, "Flat 101–501 bedroom.", 0.72);
-  addLowRoom(root, features, "101-toilet-b", "Toilet 2.542 x 1.565", "101-501", [2.54, 1.57], [-4.65, 8.55], bathFloor, "Flat 101–501 upper toilet.", 0.72);
-  addBalcony(root, features, "101-balcony", "Balcony 1.416", "101-501", [1.42, 2.72], [-6.5, 0.85], "left");
-  addBalcony(root, features, "101-wbal", "W. Bal 1.085", "101-501", [1.09, 2.05], [-6.42, 3.6], "left");
+  addLowRoom(root, features, "101-living", "Living 4.954 x 3.050", "101-501", [4.95, 3.05], [-3.48, 0], livingFloor, "Flat 101–501 living room from brochure page 2.", 0.72);
+  addLowRoom(root, features, "101-kitchen", "Kitchen 3.279 x 2.196", "101-501", [3.28, 2.2], [-5.5, 2.623], kitchenFloor, "Flat 101–501 kitchen from brochure page 2.", 0.72);
+  addLowRoom(root, features, "101-dining", "Dining 1.265 x 1.023", "101-501", [1.27, 1.03], [-2.67, 2.037], livingFloor, "Flat 101–501 dining from brochure page 2.", 0.72);
+  addLowRoom(root, features, "101-toilet-a", "Toilet 1.20 x 2.13", "101-501", [1.2, 2.13], [-1.5, 3.743], bathFloor, "Flat 101–501 inner toilet.", 0.72);
+  addLowRoom(root, features, "101-bed-a", "Bed Room 3.679 x 3.153", "101-501", [3.68, 3.15], [-6.24, 5.398], livingFloor, "Flat 101–501 bedroom.", 0.72);
+  addLowRoom(root, features, "101-bed-b", "Bed Room 3.500 x 3.701", "101-501", [3.5, 3.7], [-2.65, 6.79], livingFloor, "Flat 101–501 bedroom.", 0.72);
+  addLowRoom(root, features, "101-toilet-b", "Toilet 2.542 x 1.565", "101-501", [2.54, 1.57], [-6.2, 7.887], bathFloor, "Flat 101–501 upper toilet.", 0.72);
+  addBalcony(root, features, "101-balcony", "Balcony 1.416", "101-501", [1.42, 2.72], [-6.668, 0], "left");
+  addBalcony(root, features, "101-wbal", "W. Bal 1.085", "101-501", [1.09, 2.05], [-7.75, 2.623], "left");
 
-  addSofa(root, -3.25, 0.7, 2.45, 0);
-  addDining(root, -1.95, 3.5, 0);
-  addKitchen(root, -4.25, 3.4, 2.55, 0);
-  addBed(root, -4.55, 6.25, 0);
-  addWardrobe(root, -5.35, 7.35, 1.45, Math.PI / 2);
-  addBed(root, -0.72, 6.55, 0);
-  addWardrobe(root, -1.75, 7.85, 1.5, 0);
-  addToilet(root, -1.5, 5.0, 0);
-  addToilet(root, -4.65, 8.55, 0);
+  addSofa(root, -4.6, 0.2, 2.45, 0);
+  addDining(root, -2.67, 2.037, 0);
+  addKitchen(root, -5.5, 3.3, 2.55, 0);
+  addBed(root, -6.24, 5.55, 0);
+  addWardrobe(root, -7.73, 5.9, 1.45, Math.PI / 2);
+  addBed(root, -2.65, 7.2, 0);
+  addWardrobe(root, -3.3, 8.35, 1.5, 0);
+  addToilet(root, -1.5, 4.2, 0);
+  addToilet(root, -6.2, 8.1, 0);
 
   // FLAT 102 TO 502 — brochure dimensions, mirrored right.
-  addLowRoom(root, features, "102-living", "Living 4.828 x 3.050", "102-502", [4.83, 3.05], [3.35, 0.75], livingFloor, "Flat 102–502 living room from brochure page 2.", 0.72);
-  addLowRoom(root, features, "102-kitchen", "Kitchen 3.416 x 2.155", "102-502", [3.42, 2.16], [4.25, 3.42], kitchenFloor, "Flat 102–502 kitchen from brochure page 2.", 0.72);
-  addLowRoom(root, features, "102-dining", "Dining 1.415 x 1.023", "102-502", [1.42, 1.03], [1.95, 3.5], livingFloor, "Flat 102–502 dining from brochure page 2.", 0.72);
-  addLowRoom(root, features, "102-toilet", "Toilet 1.30 x 2.132", "102-502", [1.3, 2.13], [1.5, 5.0], bathFloor, "Flat 102–502 inner toilet.", 0.72);
-  addLowRoom(root, features, "102-bed-a", "Bed Room", "102-502", [3.55, 3.25], [4.45, 6.25], livingFloor, "Upper-right bedroom placement follows brochure page 2.", 0.72);
-  addLowRoom(root, features, "102-bed-b", "Bed Room", "102-502", [3.55, 3.4], [0.75, 6.55], livingFloor, "Upper-middle bedroom placement follows brochure page 2.", 0.72);
-  addBalcony(root, features, "102-balcony", "Balcony 1.40", "102-502", [1.4, 2.72], [6.5, 0.85], "right");
-  addBalcony(root, features, "102-wbal", "W. Bal 1.140", "102-502", [1.14, 2.05], [6.42, 3.6], "right");
+  addLowRoom(root, features, "102-living", "Living 4.828 x 3.050", "102-502", [4.83, 3.05], [3.48, 0], livingFloor, "Flat 102–502 living room from brochure page 2.", 0.72);
+  addLowRoom(root, features, "102-kitchen", "Kitchen 3.416 x 2.155", "102-502", [3.42, 2.16], [5.5, 2.603], kitchenFloor, "Flat 102–502 kitchen from brochure page 2.", 0.72);
+  addLowRoom(root, features, "102-dining", "Dining 1.415 x 1.023", "102-502", [1.42, 1.03], [2.67, 2.037], livingFloor, "Flat 102–502 dining from brochure page 2.", 0.72);
+  addLowRoom(root, features, "102-toilet", "Toilet 1.30 x 2.132", "102-502", [1.3, 2.13], [1.55, 3.743], bathFloor, "Flat 102–502 inner toilet.", 0.72);
+  addLowRoom(root, features, "102-bed-a", "Bed Room", "102-502", [3.55, 3.25], [6.225, 5.446], livingFloor, "Upper-right bedroom placement follows brochure page 2.", 0.72);
+  addLowRoom(root, features, "102-bed-b", "Bed Room", "102-502", [3.55, 3.4], [2.675, 6.79], livingFloor, "Upper-middle bedroom placement follows brochure page 2.", 0.72);
+  addBalcony(root, features, "102-balcony", "Balcony 1.40", "102-502", [1.4, 2.72], [6.65, 0], "right");
+  addBalcony(root, features, "102-wbal", "W. Bal 1.140", "102-502", [1.14, 2.05], [7.838, 2.603], "right");
 
-  addSofa(root, 3.25, 0.7, 2.35, Math.PI);
-  addDining(root, 1.95, 3.5, 0);
-  addKitchen(root, 4.25, 3.4, 2.55, Math.PI);
-  addBed(root, 4.55, 6.25, Math.PI);
-  addWardrobe(root, 5.35, 7.35, 1.45, Math.PI / 2);
-  addBed(root, 0.75, 6.55, Math.PI);
-  addWardrobe(root, 1.78, 7.85, 1.5, 0);
-  addToilet(root, 1.5, 5.0, Math.PI);
+  addSofa(root, 4.5, 0.2, 2.35, Math.PI);
+  addDining(root, 2.67, 2.037, 0);
+  addKitchen(root, 5.5, 3.25, 2.55, Math.PI);
+  addBed(root, 6.225, 5.55, Math.PI);
+  addWardrobe(root, 7.7, 5.9, 1.45, Math.PI / 2);
+  addBed(root, 2.675, 7.1, Math.PI);
+  addWardrobe(root, 3.3, 8.2, 1.5, 0);
+  addToilet(root, 1.55, 4.2, Math.PI);
+
+  addLowRoom(root, features, "102-toilet-b", "Attached toilet", "102-502", [2.54, 1.57], [6.2, 7.887], bathFloor, "Upper bathroom visible in the brochure; dimensions reconstructed.", 0.72);
+  addToilet(root, 6.2, 8.1, Math.PI);
+  addBalcony(root, features, "101-balcony-upper", "Bedroom balcony", "101-501", [1.1, 1.57], [-8.08, 7.887], "left");
+  addBalcony(root, features, "102-balcony-upper", "Bedroom balcony", "102-502", [1.1, 1.57], [8.08, 7.887], "right");
 
   // Shared duct shown between 101/102 in the combined brochure plan.
-  addLowRoom(root, features, "duct", "DUCT 1.80 x 3.96", "Common", [1.8, 3.96], [0, 4.05], ductFloor, "Central service duct from the combined brochure floor plan.", 0.78);
+  addLowRoom(root, features, "duct", "DUCT 1.80 x 3.96", "Common", [1.8, 3.96], [0, 3.6], ductFloor, "Central service duct from the combined brochure floor plan.", 0.78);
 
   // Common stair/lobby/fire-lift zone.
-  addLowRoom(root, features, "lobby", "Lobby", "Common", [4.6, 2.45], [0.35, -2.0], lobbyFloor, "Common lobby connecting stair, fire lift and Flat 103.", 0.72);
+  addLowRoom(root, features, "lobby", "Lobby", "Common", [4.6, 2.45], [0, -2.75], lobbyFloor, "Common lobby connecting stair, fire lift and Flat 103.", 0.72);
   const stair = new THREE.Group();
   for (let i = 0; i < 10; i += 1) {
     stair.add(box([2.4, 0.1 + i * 0.035, 0.31], standard(0x595d60, 0.78), [-3.45, 0.08 + i * 0.04, -3.15 + i * 0.3]));
@@ -388,29 +430,29 @@ function makeBrochureTypicalFloor(features: ExperienceFeature[]) {
   stair.add(stairPick);
   root.add(stair);
 
-  addLowRoom(root, features, "fire-lift", "Fire Lift 1.60 x 1.80", "Common", [1.6, 1.8], [2.35, -2.2], lobbyFloor, "Fire lift from brochure page 2.", 0.78);
-  addLowRoom(root, features, "common-toilet", "Toilet 1.20 x 1.80", "Common", [1.2, 1.8], [4.0, -2.2], bathFloor, "Common toilet beside the fire lift.", 0.78);
+  addLowRoom(root, features, "fire-lift", "Fire Lift 1.60 x 1.80", "Common", [1.6, 1.8], [3.2, -2.6], lobbyFloor, "Fire lift from brochure page 2.", 0.78);
+  addLowRoom(root, features, "common-toilet", "Toilet 1.20 x 1.80", "Common", [1.2, 1.8], [4.7, -2.6], bathFloor, "Common toilet beside the fire lift.", 0.78);
 
   // FLAT 103 TO 403 — lower wing.
-  addLowRoom(root, features, "103-living", "Living 5.366 x 3.000", "103-403", [5.37, 3.0], [-0.55, -5.1], livingFloor, "Flat 103–403 living room from brochure page 2.", 0.72);
-  addLowRoom(root, features, "103-bed-a", "Bed Room 3.313 x 3.146", "103-403", [3.31, 3.15], [3.7, -5.2], livingFloor, "Flat 103–403 upper bedroom.", 0.72);
-  addLowRoom(root, features, "103-kitchen", "Kitchen 3.640 x 2.061", "103-403", [3.64, 2.06], [-2.55, -8.1], kitchenFloor, "Flat 103–403 kitchen.", 0.72);
-  addLowRoom(root, features, "103-toilet", "Toilet 1.900 x 1.313", "103-403", [1.9, 1.31], [0.6, -8.05], bathFloor, "Flat 103–403 toilet.", 0.72);
-  addLowRoom(root, features, "103-bed-b", "Bed Room 3.130 x 3.830", "103-403", [3.13, 3.83], [3.7, -8.55], livingFloor, "Flat 103–403 lower bedroom.", 0.72);
-  addBalcony(root, features, "103-balcony-side", "Balcony 1.460", "103-403", [1.46, 3.0], [-4.75, -5.15], "left");
-  addBalcony(root, features, "103-wbal", "W. Bal 1.350", "103-403", [3.0, 1.35], [-2.55, -9.75], "bottom");
-  addBalcony(root, features, "103-balcony", "Balcony 1.350", "103-403", [1.35, 1.35], [0.7, -9.75], "bottom");
+  addLowRoom(root, features, "103-living", "Living 5.366 x 3.000", "103-403", [5.37, 3.0], [-1.15, -5.5], livingFloor, "Flat 103–403 living room from brochure page 2.", 0.72);
+  addLowRoom(root, features, "103-bed-a", "Bed Room 3.313 x 3.146", "103-403", [3.31, 3.15], [3.313, -5.573], livingFloor, "Flat 103–403 upper bedroom.", 0.72);
+  addLowRoom(root, features, "103-kitchen", "Kitchen 3.640 x 2.061", "103-403", [3.64, 2.06], [-2.013, -8.16], kitchenFloor, "Flat 103–403 kitchen.", 0.72);
+  addLowRoom(root, features, "103-toilet", "Toilet 1.900 x 1.313", "103-403", [1.9, 1.31], [0.88, -7.93], bathFloor, "Flat 103–403 toilet.", 0.72);
+  addLowRoom(root, features, "103-bed-b", "Bed Room 3.130 x 3.830", "103-403", [3.13, 3.83], [3.515, -9.16], livingFloor, "Flat 103–403 lower bedroom.", 0.72);
+  addBalcony(root, features, "103-balcony-side", "Balcony 1.460", "103-403", [1.46, 3.0], [-4.64, -5.5], "left");
+  addBalcony(root, features, "103-wbal", "W. Bal 1.350", "103-403", [3.0, 1.35], [-2.013, -9.93], "bottom");
+  addBalcony(root, features, "103-balcony", "Balcony 1.350", "103-403", [1.35, 1.35], [0.88, -9.44], "bottom");
 
-  addLShapeSofa(root, -0.9, -5.15, Math.PI / 2);
-  addKitchen(root, -2.55, -8.1, 3.0, 0);
-  addBed(root, 3.7, -5.2, Math.PI / 2);
-  addWardrobe(root, 4.75, -4.0, 1.45, Math.PI / 2);
-  addBed(root, 3.7, -8.55, Math.PI / 2);
-  addWardrobe(root, 4.8, -7.2, 1.6, Math.PI / 2);
-  addToilet(root, 0.6, -8.05, 0);
+  addLShapeSofa(root, -1.6, -5.3, Math.PI / 2);
+  addKitchen(root, -2.013, -7.45, 3.0, 0);
+  addBed(root, 3.313, -5.4, Math.PI / 2);
+  addWardrobe(root, 4.65, -4.95, 1.45, Math.PI / 2);
+  addBed(root, 3.515, -8.8, Math.PI / 2);
+  addWardrobe(root, 4.72, -8.1, 1.6, Math.PI / 2);
+  addToilet(root, 0.88, -7.7, 0);
 
   // A subtle floor plate only under the actual brochure composition.
-  const overall = box([14.5, 0.045, 20.4], standard(0xcfc7bb, 0.94), [0, -0.03, -0.55]);
+  const overall = box([18.6, 0.045, 20.6], standard(0xcfc7bb, 0.94), [0, -0.03, -0.55]);
   overall.renderOrder = -1;
   root.add(overall);
 
@@ -524,7 +566,10 @@ function dispose(root: THREE.Object3D) {
     if (!(object instanceof THREE.Mesh)) return;
     object.geometry.dispose();
     const materials = Array.isArray(object.material) ? object.material : [object.material];
-    for (const material of materials) material.dispose();
+    for (const material of materials) {
+      if (material instanceof THREE.MeshStandardMaterial) material.map?.dispose();
+      material.dispose();
+    }
   });
 }
 
@@ -643,7 +688,7 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean, ref
 
   const interior = makeBrochureTypicalFloor(features);
   const floorScale = Math.min(
-    (spanX * 1.25) / 14.4,
+    (spanX * 1.25) / 18.6,
     (spanZ * 1.35) / 20.0,
     1.15,
   );
@@ -657,9 +702,35 @@ export function createProjectExperience(bounds: THREE.Box3, mobile: boolean, ref
   interiorRoot.visible = false;
   terraceRoot.visible = false;
 
+  const setWalk = (walking: boolean) => {
+    interiorRoot.traverse((object) => {
+      if (object.userData.walkWall) {
+        object.scale.y = walking ? 1 : object.userData.cutawayHeight / 2.75;
+        object.position.y = object.userData.fullY * object.scale.y;
+      }
+      if (object.userData.walkCeiling) object.visible = walking;
+    });
+    root.updateMatrixWorld(true);
+  };
+  setWalk(false);
+
   return {
     root,
     features,
+    setWalk,
+    interiorScale: floorScale,
+    rooms: features.filter((feature) =>
+      /^(101-|102-|103-|lobby$|common-toilet$)/.test(feature.id)),
+    roomEntry(id: string) {
+      const feature = features.find((item) => item.id === id);
+      if (!feature) return undefined;
+      root.updateMatrixWorld(true);
+      const roomBox = new THREE.Box3().setFromObject(feature.object);
+      const point = roomBox.getCenter(new THREE.Vector3());
+      point.y = roomBox.max.y + 1.6 * floorScale;
+      point.z = roomBox.min.z + Math.min(0.48 * floorScale, (roomBox.max.z - roomBox.min.z) / 3);
+      return { point, bounds: roomBox, scale: floorScale };
+    },
     setMode(mode: ExperienceMode) {
       siteRoot.visible = mode === "site";
       interiorRoot.visible = mode === "interior";

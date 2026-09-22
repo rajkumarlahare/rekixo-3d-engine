@@ -10,6 +10,7 @@ import { projectSlugFromPathname } from "@rekixo/3d-engine-core";
 import { loadPublicExperience } from "./api";
 import { Viewer3D } from "./viewer/Viewer3D";
 import "./styles.css";
+import "./viewer/walkthrough-ui.css";
 
 type UnitFact = { series: string; type: string; areaSqFt: number };
 type NearbyFact = { name: string; distance: string };
@@ -408,7 +409,7 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
   const nearby = locationSettings.nearby ?? amenitySettings.nearby ?? [];
 
   return (
-    <main className="twin-shell">
+    <main className={(mode === "interior" || mode === "walk") ? "twin-shell twin-shell--interior" : "twin-shell"}>
       <section className="twin-stage">
         <Viewer3D
           modelUrl={experience.model?.available ? experience.model.url : undefined}
@@ -469,7 +470,7 @@ function JyotiDigitalTwin({ experience }: { experience: Public3DExperience }) {
             {mode === "building" && "Inspect the building facade from a premium architectural camera."}
             {mode === "floors" && "Separate the building stack or focus a single verified floor."}
             {mode === "units" && "Select brochure-backed units on a floor without inventing geometry."}
-            {mode === "interior" && "Explore the brochure-backed typical floor: Flats 101/102/103, lobby, stair, fire lift, rooms, kitchens, toilets and balconies. Click rooms for brochure dimensions and source-backed placement. Where brochure/DWG values conflict, the conflict is recorded instead of silently forcing one value."}
+            {mode === "interior" && "Tap a room to enter. Drag to look; hold the arrows or use WASD to move. Reconstructed from the supplied typical-floor brochure; door positions and finishes are approximate."}
             {mode === "walk" && "Enter the brochure-backed typical floor at eye level. Drag or touch to look around, then move through the living rooms, bedrooms, kitchens, toilets, balconies and common areas using keyboard or on-screen controls."}
             {mode === "terrace" && "Inspect the actual roof massing and edge lighting. No recreational roof amenity is claimed because it is not present in the supplied brochure."}
             {mode === "amenities" && "Review only the brochure-listed amenities: Car Parking, Modular Kitchen, POP in Hall and CCTV Camera."}

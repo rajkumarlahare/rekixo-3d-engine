@@ -80,7 +80,8 @@ function applySourceTexture(
     ? referenceFacadeTint[normalized] ?? sourceMaterialTint[normalized]
     : sourceMaterialTint[normalized];
   const dataUrl = sourceTextureData[key] ?? sourceTextureData[material.name];
-  if (!dataUrl) return;
+  // Embedded model textures take priority. Only restore missing source maps.
+  if (!dataUrl || material.map) return;
 
   const cached = sourceTextureCache.get(key);
   if (cached) {
@@ -194,7 +195,7 @@ export function enhanceArchitecturalModel(
         material.metalness = 0.01;
       }
 
-      if (/glass|window|translucent/.test(name)) {
+      if (/glass|window|translucent/.test(name) && !/tile/.test(name)) {
         material.color.setHex(referenceVisual ? 0x829ba5 : 0x718c93);
         material.roughness = Math.min(material.roughness, referenceVisual ? 0.09 : 0.14);
         material.metalness = Math.min(material.metalness, 0.05);

@@ -208,6 +208,10 @@ export function Viewer3D({
   const presentationRef = useRef<((view: PresentationView, instant?: boolean) => void) | null>(null);
   const experienceRef = useRef<((mode: ExperienceMode, instant?: boolean) => void) | null>(null);
   const featureCallbackRef = useRef(onFeatureSelect);
+  const enterRoomRef = useRef<((id: string) => void) | null>(null);
+  const holdWalkRef = useRef<((direction: WalkDirection, held: boolean) => void) | null>(null);
+  const [rooms, setRooms] = useState<Array<{ id: string; label: string; category: string }>>([]);
+  const [activeRoom, setActiveRoom] = useState("");
   const [mode, setMode] = useState<ViewerMode>("booting");
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string>();
@@ -236,13 +240,25 @@ export function Viewer3D({
     let projectExperience: ReturnType<typeof createProjectExperience> | undefined;
     let cameraTween: { start: number; duration: number; fromPosition: THREE.Vector3; toPosition: THREE.Vector3; fromTarget: THREE.Vector3; toTarget: THREE.Vector3; fromFov: number; toFov: number } | undefined;
     let walkActive = false;
-    let activeWalkBounds: THREE.Box3 | undefined;
     let walkYaw = 0;
     let walkPitch = 0;
     let dragPointerId: number | undefined;
     let dragX = 0;
     let dragY = 0;
     const walkKeys = new Set<string>();
+    const heldDirections = new Set<WalkDirection>();
+    let currentExperienceMode = experienceMode;
+    let walkBounds: THREE.Box3 | undefined;
+    let walkScale = 1;
+    let pressX = 0;
+    let pressY = 0;
+    let pointerTravel = 0;
+    const collisionRay = new THREE.Raycaster();
+    const collisionDirection = new THREE.Vector3();
+    const clearInput = () => { walkKeys.clear(); heldDirections.clear(); dragPointerId = undefined; };
+    holdWalkRef.current = (direction, held) => {
+      if (held) heldDirections.add(direction); else heldDirections.delete(direction);
+    };
 
     const mobile = isMobileDevice();
     const referenceVisual = visualPreset === "reference-render";
@@ -271,6 +287,7 @@ export function Viewer3D({
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? (referenceVisual ? 1.55 : 1.35) : 2));
     renderer.domElement.className = "viewer-canvas";
+    renderer.domElement.style.touchAction = "none";
     renderer.domElement.setAttribute("aria-label", "Interactive 3D project viewer");
     hostElement.appendChild(renderer.domElement);
 
@@ -402,51 +419,98 @@ export function Viewer3D({
 
     const enterWalkMode = (enabled: boolean, floor: number | null) => {
       walkActive = enabled;
+      setWalkMode(enabled);
+      cameraTween = undefined;
+      clearInput();
       controls.enabled = !enabled;
 
       if (!enabled) {
-        activeWalkBounds = undefined;
-        walkKeys.clear();
-        resetCamera();
+        projectExperience?.setWalk(false);
+        if (currentExperienceMode === "interior") experienceRef.current?.("interior", true);
+        else resetCamera();
         return;
       }
 
       if (!modelBounds) return;
       floorExploder?.reset();
       renderer.clippingPlanes = [];
+      camera.position.copy(walkStartPosition(modelBounds, floor));
+      walkBounds = modelBounds;
+      walkScale = 1;
 
-      const interiorExperience =
-        experienceMode === "interior" ? projectExperience : undefined;
-      const interiorWalk = Boolean(interiorExperience);
-      activeWalkBounds = interiorExperience
-        ? interiorExperience.focus("interior").box.clone()
-        : modelBounds.clone();
-
-      if (interiorWalk) {
-        const center = activeWalkBounds.getCenter(new THREE.Vector3());
-        const size = activeWalkBounds.getSize(new THREE.Vector3());
-        camera.position.set(
-          center.x,
-          activeWalkBounds.min.y + Math.min(1.55, Math.max(size.y * 0.78, 1.35)),
-          center.z + Math.max(size.z * 0.32, 1.8),
-        );
-        clampWalkPosition(camera.position, activeWalkBounds);
-      } else {
-        camera.position.copy(walkStartPosition(activeWalkBounds, floor));
+      if (currentExperienceMode === "interior" && projectExperience) {
+        enterRoom("101-living");
+        return;
       }
-
-      const center = activeWalkBounds.getCenter(new THREE.Vector3());
-      if (interiorWalk) center.y = camera.position.y;
+      const center = modelBounds.getCenter(new THREE.Vector3());
       const direction = center.sub(camera.position).normalize();
       walkYaw = Math.atan2(-direction.x, -direction.z);
       walkPitch = Math.asin(THREE.MathUtils.clamp(direction.y, -0.92, 0.92));
       applyWalkRotation();
     };
 
+    const enterRoom = (id: string) => {
+      if (!projectExperience || currentExperienceMode !== "interior") return;
+      const entry = projectExperience.roomEntry(id);
+      if (!entry) return;
+      clearInput();
+      cameraTween = undefined;
+      floorExploder?.reset();
+      renderer.clippingPlanes = [];
+      controls.enabled = false;
+      projectExperience.setWalk(true);
+      walkActive = true;
+      walkScale = entry.scale;
+      walkBounds = projectExperience.focus("interior").box;
+      camera.position.copy(entry.point);
+      camera.near = Math.max(0.015 * walkScale, 0.005);
+      camera.fov = 68;
+      camera.updateProjectionMatrix();
+      walkYaw = Math.PI;
+      walkPitch = -0.18;
+      applyWalkRotation();
+      setActiveRoom(id);
+      setWalkMode(true);
+    };
+    enterRoomRef.current = enterRoom;
+
+    // Swept, short steps at torso and eye level; slide along walls by trying
+    // axes independently. Invisible cutaway/ceiling meshes do not obstruct.
+    const moveWalk = (direction: WalkDirection, distance: number) => {
+      if (!walkActive || !walkBounds) return;
+      const delta = walkDelta(walkYaw, direction, distance);
+      const obstacles: THREE.Object3D[] = [];
+      const targetRoot = currentExperienceMode === "interior" ? projectExperience?.root : activeObject;
+      targetRoot?.traverseVisible((object) => {
+        if (object instanceof THREE.Mesh) obstacles.push(object);
+      });
+      const radius = 0.18 * walkScale;
+      for (const axis of ["x", "z"] as const) {
+        const amount = delta[axis];
+        if (!amount) continue;
+        collisionDirection.set(0, 0, 0);
+        collisionDirection[axis] = Math.sign(amount);
+        let blocked = false;
+        for (const level of [0, -0.8 * walkScale, -1.3 * walkScale]) {
+          for (const offset of [-radius, 0, radius]) {
+            const origin = camera.position.clone();
+            origin.y += level;
+            origin[axis === "x" ? "z" : "x"] += offset;
+            collisionRay.set(origin, collisionDirection);
+            collisionRay.near = 0;
+            collisionRay.far = Math.abs(amount) + radius;
+            if (collisionRay.intersectObjects(obstacles, false).length) { blocked = true; break; }
+          }
+          if (blocked) break;
+        }
+        if (!blocked) camera.position[axis] += amount;
+      }
+      clampWalkPosition(camera.position, walkBounds);
+    };
+
     const stepWalk = (direction: WalkDirection) => {
-      if (!walkActive || !activeWalkBounds) return;
-      camera.position.add(walkDelta(walkYaw, direction, 0.75));
-      clampWalkPosition(camera.position, activeWalkBounds);
+      if (!walkActive || !modelBounds) return;
+      moveWalk(direction, 0.15 * walkScale);
     };
 
     walkModeRef.current = enterWalkMode;
@@ -454,6 +518,8 @@ export function Viewer3D({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!walkActive) return;
+      if (event.target instanceof HTMLElement && /INPUT|SELECT|TEXTAREA/.test(event.target.tagName)) return;
+      if (event.key === "Escape") { enterWalkMode(false, null); return; }
       const key = event.key.toLowerCase();
       if (["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(key)) {
         event.preventDefault();
@@ -464,13 +530,18 @@ export function Viewer3D({
       walkKeys.delete(event.key.toLowerCase());
     };
     const handlePointerDown = (event: PointerEvent) => {
+      pressX = event.clientX;
+      pressY = event.clientY;
+      pointerTravel = 0;
       if (!walkActive) return;
+      if (dragPointerId !== undefined || event.button !== 0) return;
       dragPointerId = event.pointerId;
       dragX = event.clientX;
       dragY = event.clientY;
       renderer.domElement.setPointerCapture?.(event.pointerId);
     };
     const handlePointerMove = (event: PointerEvent) => {
+      pointerTravel = Math.max(pointerTravel, Math.hypot(event.clientX - pressX, event.clientY - pressY));
       if (!walkActive || dragPointerId !== event.pointerId) return;
       const dx = event.clientX - dragX;
       const dy = event.clientY - dragY;
@@ -481,11 +552,16 @@ export function Viewer3D({
       applyWalkRotation();
     };
     const handlePointerUp = (event: PointerEvent) => {
-      if (dragPointerId === event.pointerId) dragPointerId = undefined;
+      if (dragPointerId === event.pointerId) {
+        dragPointerId = undefined;
+        if (renderer.domElement.hasPointerCapture(event.pointerId)) renderer.domElement.releasePointerCapture(event.pointerId);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown, { passive: false });
     window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", clearInput);
+    document.addEventListener("visibilitychange", clearInput);
     renderer.domElement.addEventListener("pointerdown", handlePointerDown);
     renderer.domElement.addEventListener("pointermove", handlePointerMove);
     renderer.domElement.addEventListener("pointerup", handlePointerUp);
@@ -494,19 +570,24 @@ export function Viewer3D({
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     const handleFeatureClick = (event: MouseEvent) => {
-      if (walkActive || !projectExperience) return;
+      if (walkActive || !projectExperience || pointerTravel > 6) return;
       const rect = renderer.domElement.getBoundingClientRect();
       pointer.x = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1;
       pointer.y = -((event.clientY - rect.top) / Math.max(rect.height, 1)) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
       const hits = raycaster.intersectObject(projectExperience.root, true);
       for (const hit of hits) {
+        let ancestor: THREE.Object3D | null = hit.object;
+        let visible = true;
+        while (ancestor) { if (!ancestor.visible) visible = false; ancestor = ancestor.parent; }
+        if (!visible) continue;
         let current: THREE.Object3D | null = hit.object;
         while (current) {
           const id = current.userData.experienceFeatureId as string | undefined;
           if (id) {
             const found = projectExperience.features.find((item) => item.id === id);
             if (found) {
+              if (currentExperienceMode === "interior" && projectExperience.rooms.some((room) => room.id === id)) enterRoom(id);
               featureCallbackRef.current?.({
                 id: found.id,
                 label: found.label,
@@ -565,6 +646,7 @@ export function Viewer3D({
       if (projectExperience) scene.remove(projectExperience.root);
       projectExperience = createProjectExperience(bounds, mobile, referenceVisual);
       scene.add(projectExperience.root);
+      setRooms(projectExperience.rooms.map(({ id, label, category }) => ({ id, label, category })));
 
       const viewTarget = (view: PresentationView) => {
         if (view === "aerial") {
@@ -619,8 +701,19 @@ export function Viewer3D({
       };
 
       const setView = (view: PresentationView, instant = false) => {
+        if (walkActive || currentExperienceMode === "interior") return;
         const targetView = viewTarget(view);
         if (!targetView) return;
+        // Preserve the reference angle while fitting the complete source model
+        // inside both landscape and narrow portrait viewports.
+        if (referenceVisual && (view === "aerial" || view === "building")) {
+          const verticalHalf = THREE.MathUtils.degToRad(targetView.fov / 2);
+          const horizontalHalf = Math.atan(Math.tan(verticalHalf) * camera.aspect);
+          const distance = radiusForView / Math.sin(Math.min(verticalHalf, horizontalHalf)) * 1.08;
+          const direction = targetView.position.clone().sub(targetView.target).normalize();
+          targetView.position.copy(targetView.target).addScaledVector(direction, distance);
+          controls.maxDistance = Math.max(controls.maxDistance, distance * 2);
+        }
         controls.enabled = true;
         if (instant) {
           camera.position.copy(targetView.position);
@@ -646,9 +739,19 @@ export function Viewer3D({
 
       const setExperience = (nextMode: ExperienceMode, instant = false) => {
         if (!projectExperience || !activeObject || !siteEnvironment) return;
+        currentExperienceMode = nextMode;
+        walkActive = false;
+        setWalkMode(false);
+        clearInput();
+        controls.enabled = true;
+        cameraTween = undefined;
+        renderer.clippingPlanes = [];
+        projectExperience.setWalk(false);
         projectExperience.setMode(nextMode);
 
         const interior = nextMode === "interior";
+        controls.minDistance = interior ? 0.5 : Math.max(radiusForView * 0.55, 1.5);
+        controls.maxPolarAngle = THREE.MathUtils.degToRad(interior ? 88 : 87);
         activeObject.visible = !interior;
         siteEnvironment.root.visible = !interior;
 
@@ -690,7 +793,7 @@ export function Viewer3D({
       };
       experienceRef.current = setExperience;
       setExperience(experienceMode, true);
-      setView(presentationView, true);
+      if (experienceMode === "site") setView(presentationView, true);
 
       if (initialExploded) {
         floorExploder?.setExploded(true);
@@ -779,13 +882,14 @@ export function Viewer3D({
         if (raw >= 1) cameraTween = undefined;
       }
 
-      if (walkActive && activeWalkBounds) {
-        const speed = 2.35 * delta;
-        if (walkKeys.has("w") || walkKeys.has("arrowup")) camera.position.add(walkDelta(walkYaw, "forward", speed));
-        if (walkKeys.has("s") || walkKeys.has("arrowdown")) camera.position.add(walkDelta(walkYaw, "back", speed));
-        if (walkKeys.has("a") || walkKeys.has("arrowleft")) camera.position.add(walkDelta(walkYaw, "left", speed));
-        if (walkKeys.has("d") || walkKeys.has("arrowright")) camera.position.add(walkDelta(walkYaw, "right", speed));
-        clampWalkPosition(camera.position, activeWalkBounds);
+      if (walkActive && modelBounds) {
+        const directions = new Set(heldDirections);
+        if (walkKeys.has("w") || walkKeys.has("arrowup")) directions.add("forward");
+        if (walkKeys.has("s") || walkKeys.has("arrowdown")) directions.add("back");
+        if (walkKeys.has("a") || walkKeys.has("arrowleft")) directions.add("left");
+        if (walkKeys.has("d") || walkKeys.has("arrowright")) directions.add("right");
+        const speed = 1.65 * walkScale * delta / Math.sqrt(Math.max(directions.size, 1));
+        for (const direction of directions) moveWalk(direction, speed);
       } else {
         controls.update();
       }
@@ -810,6 +914,8 @@ export function Viewer3D({
       renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", clearInput);
+      document.removeEventListener("visibilitychange", clearInput);
       renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
       renderer.domElement.removeEventListener("pointermove", handlePointerMove);
       renderer.domElement.removeEventListener("pointerup", handlePointerUp);
@@ -838,8 +944,10 @@ export function Viewer3D({
       walkStepRef.current = null;
       presentationRef.current = null;
       experienceRef.current = null;
+      enterRoomRef.current = null;
+      holdWalkRef.current = null;
     };
-  }, [modelUrl, cameraPreset, interactionMode, initialWalk, initialWalkFloor, experienceMode, visualPreset]);
+  }, [modelUrl, cameraPreset, interactionMode, initialWalk, initialWalkFloor, visualPreset]);
 
   useEffect(() => {
     presentationRef.current?.(presentationView);
@@ -890,6 +998,21 @@ export function Viewer3D({
 
   return (
     <div className="viewer-shell" ref={hostRef}>
+      {compactUi && experienceMode !== "interior" && <div className="viewer-compact-tools">
+        <button type="button" onClick={() => { const next = !nightMode; setNightMode(next); lightingRef.current?.(next); }}>{nightMode ? "Daylight" : "Evening"}</button>
+        <button type="button" onClick={() => void toggleFullscreen()}>{isFullscreen ? "Exit full screen" : "Full screen"}</button>
+      </div>}
+      {experienceMode === "interior" && mode === "model" && (
+        <div className="viewer-room-toolbar">
+          <label htmlFor="walk-room">Enter a room</label>
+          <select id="walk-room" value={activeRoom} onChange={(event) => enterRoomRef.current?.(event.target.value)}>
+            <option value="" disabled>Select a room</option>
+            {rooms.map((room) => <option key={room.id} value={room.id}>{room.category} · {room.label}</option>)}
+          </select>
+          {walkMode && <button type="button" onClick={() => walkModeRef.current?.(false, null)}>Floor plan</button>}
+          <small>{walkMode ? "Drag to look · Hold arrows / WASD to move · Esc to exit" : "Tap a room or select it above to enter"}</small>
+        </div>
+      )}
       {!compactUi && <div className="viewer-toolbar" aria-label="3D viewer controls">
         <span className={`viewer-status viewer-status--${mode}`}>
           <i aria-hidden="true" />
@@ -1000,12 +1123,17 @@ export function Viewer3D({
 
       {walkMode && (
         <div className="viewer-walk-controls" aria-label="Walkthrough movement controls">
-          <button type="button" aria-label="Move forward" onClick={() => walkStepRef.current?.("forward")}>↑</button>
-          <div>
-            <button type="button" aria-label="Move left" onClick={() => walkStepRef.current?.("left")}>←</button>
-            <button type="button" aria-label="Move back" onClick={() => walkStepRef.current?.("back")}>↓</button>
-            <button type="button" aria-label="Move right" onClick={() => walkStepRef.current?.("right")}>→</button>
-          </div>
+          {(["forward", "left", "back", "right"] as WalkDirection[]).map((direction, index) => (
+            <button key={direction} type="button" aria-label={`Move ${direction}`}
+              onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); holdWalkRef.current?.(direction, true); }}
+              onPointerUp={() => holdWalkRef.current?.(direction, false)}
+              onPointerCancel={() => holdWalkRef.current?.(direction, false)}
+              onLostPointerCapture={() => holdWalkRef.current?.(direction, false)}
+              onKeyDown={(event) => { if (event.key === " " || event.key === "Enter") { event.preventDefault(); holdWalkRef.current?.(direction, true); } }}
+              onKeyUp={() => holdWalkRef.current?.(direction, false)}
+              onBlur={() => holdWalkRef.current?.(direction, false)}
+            >{["↑", "←", "↓", "→"][index]}</button>
+          ))}
         </div>
       )}
 

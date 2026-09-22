@@ -414,13 +414,17 @@ footer { padding-top: 24px; display: flex; justify-content: space-between; gap: 
 .viewer-walk-controls {
   position: absolute;
   z-index: 7;
-  left: 16px;
-  bottom: 18px;
+  left: max(110px, env(safe-area-inset-left));
+  bottom: 90px;
   display: grid;
   justify-items: center;
   gap: 6px;
+  grid-template-columns: repeat(3, 48px);
   pointer-events: auto;
 }
+.viewer-walk-controls button:first-child { grid-column: 2; }
+.viewer-walk-controls button:nth-child(2) { grid-column: 1; }
+.viewer-walk-controls button { touch-action: none; user-select: none; }
 .viewer-walk-controls > div {
   display: flex;
   gap: 6px;
